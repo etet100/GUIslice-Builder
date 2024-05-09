@@ -60,7 +60,10 @@ import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JViewport;
 import javax.swing.KeyStroke;
+import javax.swing.event.AncestorEvent;
+import javax.swing.event.AncestorListener;
 
 import builder.Builder;
 import builder.commands.Command;
@@ -191,8 +194,11 @@ public class PagePane extends JPanel implements iSubscriber {
 
   private ActionListener panelAction;
   
-  int nX = 0;
-  int nY = 0;
+  /**
+   * Distance from the top-left corner of the viewport to the top-left corner of the page. We want our page to be centered in the viewport 
+   * (only of page is smaller than viewport) 
+   */
+  private Point pageOffset = new Point(0, 0);
 
   /**
    * Instantiates a new page pane.
@@ -209,6 +215,21 @@ public class PagePane extends JPanel implements iSubscriber {
     this.addMouseListener(mouseHandler);
     this.addMouseWheelListener(mouseHandler);
     this.addMouseMotionListener(new MouseMotionHandler());
+    // listen for PagePane parent (JViewport)
+    this.addAncestorListener(new AncestorListener() {
+      @Override
+      public void ancestorMoved(javax.swing.event.AncestorEvent e) {
+        if (e.getComponent() == PagePane.this && e.getAncestor() instanceof JViewport) {
+          PagePane.this.addViewportChangeListener((JViewport) e.getAncestor());
+          // page cannot be moved so we don't need to listen for ancestorMoved events anymore
+          PagePane.this.removeAncestorListener(this);
+        }
+      }
+
+      public void ancestorAdded(AncestorEvent event) { /* nothing to do here */ }
+      public void ancestorRemoved(AncestorEvent event) { /* nothing to do here */ }
+    });
+
     panelAction = new ActionListener() {   
       @Override
       public void actionPerformed(ActionEvent ae)
@@ -255,6 +276,8 @@ public class PagePane extends JPanel implements iSubscriber {
     }
   }
 
+  
+
   /**
    * paintComponent.
    *
@@ -270,6 +293,10 @@ public class PagePane extends JPanel implements iSubscriber {
     }
 
     Graphics2D g2d = (Graphics2D) g.create();
+
+    // center the page in the viewport
+    g2d.translate(pageOffset.getX(), pageOffset.getY());
+
     g2d.transform(at);
     int width = pm.getWidth();
     int height = pm.getHeight();
@@ -818,6 +845,10 @@ public class PagePane extends JPanel implements iSubscriber {
       return new Point(x,y);
     }
   }
+
+  static public Point mapPoint(Point p) {
+    return mapPoint(p.x, p.y);
+  }
   
   /**
    * Change Z order.
@@ -864,8 +895,8 @@ public class PagePane extends JPanel implements iSubscriber {
      */
     @Override
     public void mouseClicked(MouseEvent e) {
-      mousePt = e.getPoint();
-      Widget w = findOne(mousePt);
+      mousePt = applyPageOffsetToPoint(e.getPoint());
+      Widget widget = findOne(mousePt);
       int button = e.getButton();
       if (button != MouseEvent.BUTTON1) {
 //    System.out.println("button != MouseEvent.BUTTON1");
@@ -876,9 +907,9 @@ public class PagePane extends JPanel implements iSubscriber {
       }
       if (e.isControlDown()) {
         // Single Left-click + Ctrl means to toggle select under cursor
-        if (w != null) {
-          if (w.isSelected()) {
-            unSelectWidget(w);
+        if (widget != null) {
+          if (widget.isSelected()) {
+            unSelectWidget(widget);
             /* after a multi-selection and a toggle off
              * we might be left with treeview and propview
              * showing a widget thats no longer selected.
@@ -892,9 +923,9 @@ public class PagePane extends JPanel implements iSubscriber {
                   getKey());
             }
           } else {
-            selectWidget(w);
+            selectWidget(widget);
             MsgBoard.sendEvent(getKey(),MsgEvent.OBJECT_SELECTED_PAGEPANE, 
-                w.getModel().getKey(),
+                widget.getModel().getKey(),
                 getKey());
           }
           e.getComponent().repaint();
@@ -903,10 +934,10 @@ public class PagePane extends JPanel implements iSubscriber {
       }
       if (e.isShiftDown()) {
         // Single Left-click + Shift means to select under cursor
-        if (w != null) {
-          selectWidget(w);
+        if (widget != null) {
+          selectWidget(widget);
           MsgBoard.sendEvent(getKey(),MsgEvent.OBJECT_SELECTED_PAGEPANE,
-              w.getModel().getKey(),
+              widget.getModel().getKey(),
               getKey());
           e.getComponent().repaint();
         } 
@@ -915,15 +946,15 @@ public class PagePane extends JPanel implements iSubscriber {
       
       // Single Left-click - deselect all widgets then select widget under cursor
       selectNone();
-      if (w == null) {
+      if (widget == null) {
         ribbon.setEditButtons(selectedGroupCnt);
         MsgBoard.sendEvent(getKey(),MsgEvent.OBJECT_SELECTED_PAGEPANE,
             getKey(), "");
       } else {
 //        System.out.println("selectWidget: " + w.getEnum());
-        selectWidget(w);
+        selectWidget(widget);
         MsgBoard.sendEvent(getKey(),MsgEvent.OBJECT_SELECTED_PAGEPANE,
-            w.getModel().getKey(), getKey());
+            widget.getModel().getKey(), getKey());
         e.getComponent().repaint();
       }
     }  // end mouseClicked
@@ -965,17 +996,17 @@ public class PagePane extends JPanel implements iSubscriber {
      */
     @Override
     public void mousePressed(MouseEvent e) {
-      mousePt = e.getPoint();
+      mousePt = applyPageOffsetToPoint(e.getPoint());
       bDragging = false;
       Widget w = findOne(mousePt);
-      if (bRectangularSelectionEn) {
+      if (bRectangularSelectionMode) {
         bMultiSelectionBox = true;
         donotSelectKey = null;
         if (w != null) {
           donotSelectKey = w.getKey();
         }
       } else if (w != null) {
-        Point unscaledPoint = PagePane.mapPoint(e.getPoint().x, e.getPoint().y);
+        Point unscaledPoint = PagePane.mapPoint(mousePt);
         HandleType handleType = w.getActionHandle(w.toWidgetSpace(unscaledPoint));
         switch (handleType) {
           case DRAG:
@@ -1023,7 +1054,9 @@ public class PagePane extends JPanel implements iSubscriber {
         return;
       }
 
-      widgetUnderCursor = findOne(e.getPoint());
+      Point mousePt = applyPageOffsetToPoint(e.getPoint());
+
+      widgetUnderCursor = findOne(mousePt);
       if (widgetUnderCursor == null) {
         setCursor(Cursor.getDefaultCursor());
         return;
@@ -1033,7 +1066,7 @@ public class PagePane extends JPanel implements iSubscriber {
         return;
       }
 
-      Point unscaledPoint = PagePane.mapPoint(e.getPoint().x, e.getPoint().y); 
+      Point unscaledPoint = PagePane.mapPoint(mousePt); 
       HandleType handleType = widgetUnderCursor.getActionHandle(widgetUnderCursor.toWidgetSpace(unscaledPoint));
       switch (handleType) {
         case DRAG:
@@ -1082,13 +1115,16 @@ public class PagePane extends JPanel implements iSubscriber {
      */
     @Override
     public void mouseDragged(MouseEvent e) {
+      // @TODO use mousePt instead of newMousePt, rename current mousePt to something clearer
+      Point newMousePt = applyPageOffsetToPoint(e.getPoint());
       if (bMultiSelectionBox) {
         // Here I'm working out the size and position of my rubber band
         mouseRect.setBounds(
-            Math.min(mousePt.x, e.getX()),
-            Math.min(mousePt.y, e.getY()),
-            Math.abs(mousePt.x - e.getX()),
-            Math.abs(mousePt.y - e.getY()));
+            Math.min(mousePt.x, newMousePt.x),
+            Math.min(mousePt.y, newMousePt.y),
+            Math.abs(mousePt.x - newMousePt.x),
+            Math.abs(mousePt.y - newMousePt.y)
+        );
         // Now select any widgets that fit inside our rubber band
         selectRect(mouseRect);
      } else if (bDragging) {
@@ -1105,12 +1141,12 @@ public class PagePane extends JPanel implements iSubscriber {
         }
         // No need to adjust our points using u.fromWinPoint() 
         // because here we are calculating offsets not absolute points.
-        dragCommand.move(e.getPoint());
+        dragCommand.move(newMousePt);
       } else if (bResizing) {
         if (resizeCommand == null) {
           System.out.println("resizeCommand is null");
         } else {
-          Point unscaledPoint = PagePane.mapPoint(e.getPoint().x, e.getPoint().y);
+          Point unscaledPoint = PagePane.mapPoint(newMousePt);
           resizeCommand.move(unscaledPoint, e.isAltDown(), e.isControlDown());
         }
       }
@@ -1126,19 +1162,18 @@ public class PagePane extends JPanel implements iSubscriber {
    */
   @Override
   public Dimension getPreferredSize() {
-    Dimension scaledSize = new Dimension(
+    return getScaledPageSize();
+  }
+
+  private Dimension getScaledPageSize() {
+    return new Dimension(
       (int) (pm.getWidth() * zoomFactor), 
-      (int) (pm.getHeight() * zoomFactor)
-    );    
-    return scaledSize;
+      (int) (pm.getHeight() * zoomFactor + 10) // small padding 
+    );
   }
 
   private void updateContentSize() {
-    Dimension scaledSize = new Dimension(
-      (int) (pm.getWidth() * zoomFactor), 
-      (int) (pm.getHeight() * zoomFactor)
-    );
-    setSize(scaledSize);
+    setSize(getScaledPageSize());
   }
 
   /**
@@ -1363,5 +1398,39 @@ public class PagePane extends JPanel implements iSubscriber {
       } // end key != null
     } // end for (Widget w)
     Builder.postStatusMsg("Scale operation completed!");
+  }
+
+  /**
+   * Translate cursor position to page coordinates
+   */
+  private Point applyPageOffsetToPoint(Point p) {
+    return new Point(
+      (int) (p.x - pageOffset.getX()),
+      (int) (p.y - pageOffset.getY())
+    );
+  } 
+
+  /**
+   * Listener for parent viewport will be used to detect changes in viewport size. It is necessary to make sure that the page is always 
+   * centered in the viewport.
+   */
+  private void addViewportChangeListener(JViewport viewport) {
+    viewport.addChangeListener((javax.swing.event.ChangeEvent e) -> {
+      updatePageOffset(((JViewport) e.getSource()).getSize());
+    });
+  }
+
+  private void updatePageOffset(Dimension viewportSize) {
+    Dimension scaledPageSize = getScaledPageSize();
+    
+    Point newPageOffset = new Point(
+      scaledPageSize.width < viewportSize.width ? (viewportSize.width - scaledPageSize.width) / 2 : 0,
+      scaledPageSize.height < viewportSize.height ? (viewportSize.height - scaledPageSize.height) / 2 : 5 
+    );
+
+    if (newPageOffset != pageOffset) {
+      pageOffset = newPageOffset;
+      repaint();
+    }
   }
 }
