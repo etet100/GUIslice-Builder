@@ -1072,7 +1072,6 @@ public class PagePane extends JPanel implements iSubscriber {
       }
 
       Point unscaledPoint = PagePane.mapPoint(mousePt);
-      System.out.println("mouseMoved: " + unscaledPoint);
       HandleType handleType = widgetUnderCursor.getActionHandle(widgetUnderCursor.toWidgetSpace(unscaledPoint));
       switch (handleType) {
         case DRAG:
@@ -1413,7 +1412,6 @@ public class PagePane extends JPanel implements iSubscriber {
    */
   private void addViewportChangeListener(JViewport viewport) {
     viewport.addChangeListener((javax.swing.event.ChangeEvent e) -> {
-      // System.out.println(e);
       updatePageOffset(((JViewport) e.getSource()).getSize());
     });
   }
