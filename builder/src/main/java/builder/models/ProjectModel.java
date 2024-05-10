@@ -103,6 +103,9 @@ public class ProjectModel extends PageModel implements MultipeLineCellListener {
   public static final int PROP_MAX_STRING           = 19;
   public static final int PROP_ROTATION             = 20;
   
+  public static final int PROP_CENTER_PAGEEDITOR = 21;
+  public static final int PROP_MAX = PROP_CENTER_PAGEEDITOR;
+
   /** The Property Defaults */
   static public  final String  DEF_IDE                 = "Arduino IDE";
   static public  final String  DEF_TARGET              = "Adafruit_GFX";
@@ -124,6 +127,8 @@ public class ProjectModel extends PageModel implements MultipeLineCellListener {
   static public  final Integer DEF_ROTATION            = Integer.valueOf(-1);
   static public  final Boolean DEF_BACKWARD_COMPAT     = Boolean.valueOf(false);
   
+  static public final Boolean DEF_CENTER_PAGEEDITOR = Boolean.valueOf(false);
+
   /** The cb themes. */
   public static JComboBox<String> cbThemes;
   
@@ -203,15 +208,14 @@ public class ProjectModel extends PageModel implements MultipeLineCellListener {
   protected void initProperties()
   {
     widgetType = EnumFactory.PROJECT + "$1";
-    data = new Object[21][5];
-
+    data = new Object[PROP_MAX + 1][5];
+    
     initProp(PROP_KEY, String.class, "COM-001", Boolean.TRUE,"Key",widgetType);
     initProp(PROP_ENUM, String.class, "COM-002", Boolean.FALSE,"ENUM","E_PROJECT_OPTIONS");
     initProp(PROP_IDE, String.class, "GEN-098", Boolean.FALSE,"Target IDE",DEF_IDE);
     initProp(PROP_PIO_ENV, String.class, "GEN-099", Boolean.TRUE,"PlatformIO default_envs","");
     initProp(PROP_TARGET, String.class, "GEN-101", Boolean.FALSE,"Graphics Library",DEF_TARGET);
-    initProp(PROP_GUISLICE_THEME, String.class, "GEN-097", Boolean.FALSE,"GUIslice API Theme",
-        DEF_GUISLICE_DEFAULT_THEME);
+    initProp(PROP_GUISLICE_THEME, String.class, "GEN-097", Boolean.FALSE,"GUIslice API Theme", DEF_GUISLICE_DEFAULT_THEME);
 
     initProp(PROP_FONT_LIST, String[].class, "LIST-108", Boolean.FALSE,
         "Project's Extra Fonts",DEF_INCLUDES);
@@ -239,6 +243,8 @@ public class ProjectModel extends PageModel implements MultipeLineCellListener {
     initProp(PROP_ROTATION, Integer.class, "GEN-112", Boolean.FALSE,
         "Screen Rotation [0-3 or -1 default]",DEF_ROTATION);
 
+    initProp(PROP_CENTER_PAGEEDITOR, Boolean.class, "GEN-113", Boolean.FALSE,
+        "Center Page Editor?", DEF_CENTER_PAGEEDITOR);
   }
   
   /**
@@ -306,6 +312,16 @@ public class ProjectModel extends PageModel implements MultipeLineCellListener {
   public boolean isCellEditable(int row, int col) {
     if (col == 0) return false;
     return !isCellReadOnly(row);
+  }
+
+  /**
+   * @return <code>true</code>, if user wants to show page preview at the center
+   */
+  public boolean isCenterPageEditor() {
+    if (data[PROP_CENTER_PAGEEDITOR][PROP_VAL_VALUE] instanceof String) {
+      return data[PROP_CENTER_PAGEEDITOR][PROP_VAL_VALUE] != "";
+    }
+    return ((Boolean) data[PROP_CENTER_PAGEEDITOR][PROP_VAL_VALUE]).booleanValue();
   }
 
   /**

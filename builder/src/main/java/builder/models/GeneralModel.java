@@ -95,6 +95,11 @@ public class GeneralModel extends WidgetModel {
   public static final int PROP_SIZE_TREEVIEW_WIDTH  = 26; // Size of tree View Pane 
   public static final int PROP_SIZE_TREEVIEW_HEIGHT = 27; 
   
+
+  public static final int PROP_CENTER_PAGEEDITOR = 28;
+
+  public static final int PROP_MAX = PROP_CENTER_PAGEEDITOR;
+
   /** The Property Defaults */
   static public  final String  DEF_IDE                 = "Arduino IDE";
   static public  final String  DEF_TARGET              = "Adafruit_GFX";
@@ -112,7 +117,24 @@ public class GeneralModel extends WidgetModel {
   static public  final Integer DEF_MAX_STRING          = Integer.valueOf(100);
   static public  final Integer DEF_ROTATION            = Integer.valueOf(-1);
   static public  final Boolean DEF_BACKWARD_COMPAT     = Boolean.valueOf(false);
-  
+  static public final String DEF_IDE = "Arduino IDE";
+  static public final String DEF_TARGET = "Adafruit_GFX";
+  private static final String DEF_GUISLICE_DEFAULT_THEME = "GUIslice";
+  static public final Integer DEF_WIDTH = Integer.valueOf(320);
+  static public final Integer DEF_HEIGHT = Integer.valueOf(240);
+  static public final Integer DEF_DPI = Integer.valueOf(144);
+  static public final String DEF_PROJECT_DIR = "projects";
+  static public final String DEF_TARGET_IMAGE_DIR = "/";
+  static public final Color DEF_BACKGROUND = Color.BLACK;
+  static public final Color DEF_TRANSPARENCY_COLOR = new Color(255, 0, 255); // GSLC_COL_MAGENTA
+  static public final Integer DEF_MARGINS = Integer.valueOf(10);
+  static public final Integer DEF_HSPACING = Integer.valueOf(20);
+  static public final Integer DEF_VSPACING = Integer.valueOf(20);
+  static public final Integer DEF_MAX_STRING = Integer.valueOf(100);
+  static public final Integer DEF_ROTATION = Integer.valueOf(-1);
+  static public final Boolean DEF_BACKWARD_COMPAT = Boolean.valueOf(false);
+  static public final Boolean DEF_CENTER_PAGEEDITOR = Boolean.valueOf(false);
+
   /** The cb themes. */
   public static JComboBox<String> cbThemes;
   
@@ -160,7 +182,7 @@ public class GeneralModel extends WidgetModel {
   protected void initProperties()
   {
     widgetType = EnumFactory.GENERAL;
-    data = new Object[28][5];
+    data = new Object[PROP_MAX + 1][5];
 
     initProp(PROP_KEY, String.class, "COM-001", Boolean.TRUE,"Key",widgetType);
     initProp(PROP_THEME, String.class, "GEN-100", Boolean.FALSE,"Java Themes","");
@@ -206,6 +228,9 @@ public class GeneralModel extends WidgetModel {
     initProp(PROP_SIZE_PROPVIEW_HEIGHT, Integer.class, "GEN-135", Boolean.FALSE,"PropView Pane Height",Integer.valueOf(0));
     initProp(PROP_SIZE_TREEVIEW_WIDTH, Integer.class,  "GEN-137", Boolean.FALSE,"TreeView Pane Width",Integer.valueOf(240));
     initProp(PROP_SIZE_TREEVIEW_HEIGHT, Integer.class, "GEN-138", Boolean.FALSE,"TreeView Pane Height",Integer.valueOf(400));
+
+    initProp(PROP_CENTER_PAGEEDITOR, Boolean.class, "GEN-139", Boolean.FALSE,
+        "Center page editor?", DEF_CENTER_PAGEEDITOR);
   }
   
   /**
@@ -667,7 +692,14 @@ public class GeneralModel extends WidgetModel {
   public boolean isPreserveButtonCallbacks() {
     return ((Boolean) data[PROP_PRESERVE_BTN_CALLBACKS][PROP_VAL_VALUE]).booleanValue();
   }
-  
+
+  /**
+   * @return <code>true</code>, if user wants to show page preview at the center
+   */
+  public boolean isCenterPageEditor() {
+    return ((Boolean) data[PROP_CENTER_PAGEEDITOR][PROP_VAL_VALUE]).booleanValue();
+  }
+
   /**
    * getEditorAt
    *

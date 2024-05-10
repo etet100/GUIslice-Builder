@@ -109,9 +109,10 @@ public class PagePane extends JPanel implements iSubscriber {
   
   /** The mouse rect. */
   private Rectangle mouseRect = new Rectangle();
-  
-  // /** Cursor style will be CROSSHAIR in rectangular selection mode or arrow in default mode */
-  // public static Cursor  = new Cursor(Cursor.CROSSHAIR_CURSOR); 
+
+  // /** Cursor style will be CROSSHAIR in rectangular selection mode or arrow in
+  // default mode */
+  // public static Cursor = new Cursor(Cursor.CROSSHAIR_CURSOR);
 
   /** The rectangular selection enabled switch */
   public static boolean bRectangularSelectionMode = false;
@@ -168,13 +169,20 @@ public class PagePane extends JPanel implements iSubscriber {
   
   /** The zoom factor. */
   public static double zoomFactor = 1;
-  
+
+  /**
+   * Distance from the top-left corner of the viewport to the top-left corner of
+   * the page. We want our page to be centered in the viewport
+   * (only of page is smaller than viewport)
+   */
+  private static Point pageOffset = new Point(0, 0);
+
   /** The zoom AffineTransform at. */
   private static AffineTransform at = null;
-  
+
   /** The inverse AffineTransform at. */
-  public static AffineTransform inv_at;
-  
+  public static AffineTransform invertedAt;
+
   private String[] commands = {
                                   "UP",
                                   "DOWN",
@@ -193,12 +201,6 @@ public class PagePane extends JPanel implements iSubscriber {
   };
 
   private ActionListener panelAction;
-  
-  /**
-   * Distance from the top-left corner of the viewport to the top-left corner of the page. We want our page to be centered in the viewport 
-   * (only of page is smaller than viewport) 
-   */
-  private Point pageOffset = new Point(0, 0);
 
   /**
    * Instantiates a new page pane.
@@ -227,6 +229,7 @@ public class PagePane extends JPanel implements iSubscriber {
       }
 
       public void ancestorAdded(AncestorEvent event) { /* nothing to do here */ }
+
       public void ancestorRemoved(AncestorEvent event) { /* nothing to do here */ }
     });
 
@@ -276,8 +279,6 @@ public class PagePane extends JPanel implements iSubscriber {
     }
   }
 
-  
-
   /**
    * paintComponent.
    *
@@ -293,9 +294,6 @@ public class PagePane extends JPanel implements iSubscriber {
     }
 
     Graphics2D g2d = (Graphics2D) g.create();
-
-    // center the page in the viewport
-    g2d.translate(pageOffset.getX(), pageOffset.getY());
 
     g2d.transform(at);
     int width = pm.getWidth();
@@ -357,13 +355,11 @@ public class PagePane extends JPanel implements iSubscriber {
    */
   public static void zoomTransform() {
     at = new AffineTransform();
-    double xOffset = 0.0;
-    double yOffset = 0.0;
-    
-    at.translate(xOffset, yOffset);
+
     at.scale(zoomFactor, zoomFactor);
+    at.translate(pageOffset.getX(), pageOffset.getY());
     try {
-      inv_at = at.createInverse();
+      invertedAt = at.createInverse();
     } catch (NoninvertibleTransformException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
@@ -806,16 +802,7 @@ public class PagePane extends JPanel implements iSubscriber {
    * @return the matching <code>Widget</code> object or null.
    */
   public Widget findOne(Point p) {
-    // we may need to deal with scaled points because of zoom feature
-    Point2D pos = p;
-    if (zoomFactor > 1) {
-      Point2D.Double scaledPos = new Point2D.Double();
-      scaledPos.x = (double) p.x;
-      scaledPos.y = (double) p.y;
-      // transforms are only needed in zoom mode
-      inv_at.transform(scaledPos, scaledPos);
-      pos = scaledPos;
-    }
+    Point2D pos = mapPoint(p);
 
     // last element is considered the topmost
     ListIterator<Widget> iterator = widgets.listIterator(widgets.size());
@@ -828,22 +815,18 @@ public class PagePane extends JPanel implements iSubscriber {
 
     return null;
   }
-  
+
   static public Point mapPoint(int x, int y) {
-    // we may need to deal with scaled points because of zoom feature
-    if (zoomFactor > 1) {
-      Point2D.Double scaledPos = new Point2D.Double();
-      scaledPos.x = (double)x;
-      scaledPos.y = (double)y;
-      // transforms are only needed in zoom mode
-      inv_at.transform(scaledPos, scaledPos);
-//    System.out.println("map: Z=" + zoomFactor  + 
-//        " [" + x + "," + y + "] "  + " s=["  +
-//        scaledPos.x + "," + scaledPos.y + "]");
-      return new Point((int)scaledPos.x, (int)scaledPos.y);
-    } else {
-      return new Point(x,y);
+    // do nothing if no transformation is done
+    if (zoomFactor == 1 && pageOffset.x == 0 && pageOffset.y == 0) {
+      return new Point(x, y);
     }
+
+    Point2D.Double scaledPos = new Point2D.Double((double) x, (double) y);
+
+    invertedAt.transform(scaledPos, scaledPos);
+
+    return new Point((int) scaledPos.x, (int) scaledPos.y);
   }
 
   static public Point mapPoint(Point p) {
@@ -895,8 +878,7 @@ public class PagePane extends JPanel implements iSubscriber {
      */
     @Override
     public void mouseClicked(MouseEvent e) {
-      mousePt = applyPageOffsetToPoint(e.getPoint());
-      Widget widget = findOne(mousePt);
+      Widget widget = findOne(e.getPoint());
       int button = e.getButton();
       if (button != MouseEvent.BUTTON1) {
 //    System.out.println("button != MouseEvent.BUTTON1");
@@ -948,12 +930,12 @@ public class PagePane extends JPanel implements iSubscriber {
       selectNone();
       if (widget == null) {
         ribbon.setEditButtons(selectedGroupCnt);
-        MsgBoard.sendEvent(getKey(),MsgEvent.OBJECT_SELECTED_PAGEPANE,
+        MsgBoard.sendEvent(getKey(), MsgEvent.OBJECT_SELECTED_PAGEPANE,
             getKey(), "");
       } else {
-//        System.out.println("selectWidget: " + w.getEnum());
+        // System.out.println("selectWidget: " + w.getEnum());
         selectWidget(widget);
-        MsgBoard.sendEvent(getKey(),MsgEvent.OBJECT_SELECTED_PAGEPANE,
+        MsgBoard.sendEvent(getKey(), MsgEvent.OBJECT_SELECTED_PAGEPANE,
             widget.getModel().getKey(), getKey());
         e.getComponent().repaint();
       }
@@ -996,21 +978,22 @@ public class PagePane extends JPanel implements iSubscriber {
      */
     @Override
     public void mousePressed(MouseEvent e) {
-      mousePt = applyPageOffsetToPoint(e.getPoint());
+      mousePt = e.getPoint();
       bDragging = false;
-      Widget w = findOne(mousePt);
+      Widget widgetUnderCursor = findOne(mousePt);
       if (bRectangularSelectionMode) {
         bMultiSelectionBox = true;
         donotSelectKey = null;
-        if (w != null) {
-          donotSelectKey = w.getKey();
+        if (widgetUnderCursor != null) {
+          donotSelectKey = widgetUnderCursor.getKey();
         }
-      } else if (w != null) {
+      } else if (widgetUnderCursor != null) {
         Point unscaledPoint = PagePane.mapPoint(mousePt);
-        HandleType handleType = w.getActionHandle(w.toWidgetSpace(unscaledPoint));
+        HandleType handleType = widgetUnderCursor.getActionHandle(widgetUnderCursor.toWidgetSpace(unscaledPoint));
         switch (handleType) {
           case DRAG:
-            if (w.isSelected()) bDragging = true;
+            if (widgetUnderCursor.isSelected())
+              bDragging = true;
             dragPt = new Point(mousePt.x, mousePt.y);
             break;
           case NONE:
@@ -1031,15 +1014,32 @@ public class PagePane extends JPanel implements iSubscriber {
      */
     @Override
     public void mouseWheelMoved(MouseWheelEvent e) {
-      if (e.isControlDown()) {
-        int distance = e.getWheelRotation();
-        if (distance < 0) {
-          zoomIn();
-        } else {
-          zoomOut();
-        }
-        refreshView();
+      if (!e.isControlDown()) {
+        return;
       }
+
+      // we don't use mapPoint here because we don't want result to be cast to int
+      Point2D.Double pointAtCursorBeforeZoom = new Point2D.Double();
+      invertedAt.transform(e.getPoint(), pointAtCursorBeforeZoom);
+      
+      JViewport viewPort = (JViewport) (PagePane.this.getParent());
+      Point viewPortMousePos = viewPort.getMousePosition();
+
+      int distance = e.getWheelRotation();
+      if (distance < 0) {
+        zoomIn();
+      } else {
+        zoomOut();
+      }
+
+      refreshView();
+
+      Point newPosition = new Point(
+        (int) ((pointAtCursorBeforeZoom.getX() * zoomFactor) - viewPortMousePos.x),
+        (int) ((pointAtCursorBeforeZoom.getY() * zoomFactor) - viewPortMousePos.y)
+      );
+
+      viewPort.setViewPosition(newPosition); 
     }
   } // end MouseHandler
 
@@ -1054,7 +1054,7 @@ public class PagePane extends JPanel implements iSubscriber {
         return;
       }
 
-      Point mousePt = applyPageOffsetToPoint(e.getPoint());
+      Point mousePt = e.getPoint();
 
       widgetUnderCursor = findOne(mousePt);
       if (widgetUnderCursor == null) {
@@ -1066,7 +1066,8 @@ public class PagePane extends JPanel implements iSubscriber {
         return;
       }
 
-      Point unscaledPoint = PagePane.mapPoint(mousePt); 
+      Point unscaledPoint = PagePane.mapPoint(mousePt);
+      System.out.println("mouseMoved: " + unscaledPoint);
       HandleType handleType = widgetUnderCursor.getActionHandle(widgetUnderCursor.toWidgetSpace(unscaledPoint));
       switch (handleType) {
         case DRAG:
@@ -1116,7 +1117,7 @@ public class PagePane extends JPanel implements iSubscriber {
     @Override
     public void mouseDragged(MouseEvent e) {
       // @TODO use mousePt instead of newMousePt, rename current mousePt to something clearer
-      Point newMousePt = applyPageOffsetToPoint(e.getPoint());
+      Point newMousePt = e.getPoint();
       if (bMultiSelectionBox) {
         // Here I'm working out the size and position of my rubber band
         mouseRect.setBounds(
@@ -1196,6 +1197,7 @@ public class PagePane extends JPanel implements iSubscriber {
     }
     repaint();
   }
+
   /**
    * updateEvent provides the implementation of Observer Pattern. It monitors
    * selection of widgets in the tree view, modification of widgets by commands,
@@ -1401,32 +1403,25 @@ public class PagePane extends JPanel implements iSubscriber {
   }
 
   /**
-   * Translate cursor position to page coordinates
-   */
-  private Point applyPageOffsetToPoint(Point p) {
-    return new Point(
-      (int) (p.x - pageOffset.getX()),
-      (int) (p.y - pageOffset.getY())
-    );
-  } 
-
-  /**
    * Listener for parent viewport will be used to detect changes in viewport size. It is necessary to make sure that the page is always 
    * centered in the viewport.
    */
   private void addViewportChangeListener(JViewport viewport) {
     viewport.addChangeListener((javax.swing.event.ChangeEvent e) -> {
+      // System.out.println(e);
       updatePageOffset(((JViewport) e.getSource()).getSize());
     });
   }
 
   private void updatePageOffset(Dimension viewportSize) {
     Dimension scaledPageSize = getScaledPageSize();
-    
-    Point newPageOffset = new Point(
-      scaledPageSize.width < viewportSize.width ? (viewportSize.width - scaledPageSize.width) / 2 : 0,
-      scaledPageSize.height < viewportSize.height ? (viewportSize.height - scaledPageSize.height) / 2 : 5 
-    );
+
+    Point newPageOffset = new Point(0, 0);
+    if (pm.isCenterPageEditor()) {
+      newPageOffset = new Point(
+          scaledPageSize.width < viewportSize.width ? (viewportSize.width - scaledPageSize.width) / 2 : 0,
+          scaledPageSize.height < viewportSize.height ? (viewportSize.height - scaledPageSize.height) / 2 : 5);
+    }
 
     if (newPageOffset != pageOffset) {
       pageOffset = newPageOffset;
