@@ -356,8 +356,9 @@ public class PagePane extends JPanel implements iSubscriber {
   public static void zoomTransform() {
     at = new AffineTransform();
 
-    at.scale(zoomFactor, zoomFactor);
     at.translate(pageOffset.getX(), pageOffset.getY());
+    at.scale(zoomFactor, zoomFactor);
+
     try {
       invertedAt = at.createInverse();
     } catch (NoninvertibleTransformException e) {
@@ -861,6 +862,10 @@ public class PagePane extends JPanel implements iSubscriber {
   public void refreshView() {
     ribbon.setEditButtons(selectedGroupCnt); // needed on page changes
     updateContentSize();
+    if (getParent() instanceof JViewport) {
+      // affine transform may require update in order to set connect page offset
+      updatePageOffset(((JViewport) getParent()).getSize());
+    }
     repaint();
   }
   
@@ -1425,7 +1430,8 @@ public class PagePane extends JPanel implements iSubscriber {
 
     if (newPageOffset != pageOffset) {
       pageOffset = newPageOffset;
-      repaint();
+
+      zoomTransform();
     }
   }
 }
