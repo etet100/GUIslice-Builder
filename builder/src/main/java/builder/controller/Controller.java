@@ -1402,13 +1402,6 @@ public class Controller extends JInternalFrame
   }
   
   /**
-   * rectangularSelection.
-   */
-  public void rectangularSelection() {
-    currentPage.rectangularSelection(true);
-  }
-  
-  /**
    * showPreferences
    */
   public void showPreferences() {

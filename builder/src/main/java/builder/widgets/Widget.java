@@ -50,7 +50,7 @@ import builder.models.WidgetModel;
 abstract public class Widget {
   
   /** The Constant dashed. */
-  final static public  BasicStroke dashed = new BasicStroke(3.0f, 
+  final static public  BasicStroke dashed = new BasicStroke(1.8f,
       BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 5.0f, new float[]{5.0f}, 0);
   
   /** The Constant dotted. */

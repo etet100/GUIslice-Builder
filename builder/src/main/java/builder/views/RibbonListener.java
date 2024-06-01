@@ -675,12 +675,7 @@ public class RibbonListener implements ActionListener {
       Builder.logger.debug("Toolbar: seekbar");
       createWidget(EnumFactory.SEEKBAR);
     break;
-  
-    case "selection":
-      Builder.logger.debug("Toolbar: rectangle selection");
-      controller.rectangularSelection();
-      break;
-      
+
     case "slider":
       Builder.logger.debug("Toolbar: slider");
       createWidget(EnumFactory.SLIDER);

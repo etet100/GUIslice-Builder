@@ -368,23 +368,18 @@ public class PagePane extends JPanel implements iSubscriber {
         w.draw(g2d);
       }
     }
-    if (currentAction == CurrentAction.RECTANGULAR_SELECTION) {
-      // draw our selection rubber band
-      g2d.setColor(Color.RED);
-      g2d.setStroke(Widget.dashed);
-      g2d.drawRect(mouseRect.x, mouseRect.y,
-          mouseRect.width, mouseRect.height);
-    }
+
     // gets rid of the copy
     g2d.dispose();
 
     boolean widgetActionInProgress = (currentAction == CurrentAction.RESIZING_WIDGET && resizeCommand != null) ||
-        (currentAction == CurrentAction.DRAGGING_WIDGET && dragCommand != null);
+        (currentAction == CurrentAction.DRAGGING_WIDGET && dragCommand != null) ||
+        (currentAction == CurrentAction.RECTANGULAR_SELECTION);
     if (widgetActionInProgress || advancedSnappingModel.isEditGuidelines() || advancedSnappingModel.isShowMargins() || advancedSnappingModel.isShowGuidelines()) {
       final ScaledGraphics graphics = new ScaledGraphics((Graphics2D) g.create(), zoomFactor, pageOffset);
 
       // dashed stroke for all features
-      graphics.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 5.0f, new float[]{5.0f}, 0));
+      graphics.setStroke(Widget.dashed);
 
       if ((widgetActionInProgress && advancedSnappingModel.isSnapToMargins()) || advancedSnappingModel.isShowMargins()) {
         drawMargins(graphics, width, height);
@@ -398,6 +393,13 @@ public class PagePane extends JPanel implements iSubscriber {
         (currentAction == CurrentAction.DRAGGING_WIDGET && dragCommand != null)
       ) {
         drawSnappingMarkers(graphics, width, height);
+      }
+
+      if (currentAction == CurrentAction.RECTANGULAR_SELECTION) {
+        // draw our selection rubber band
+        graphics.setColor(Color.RED);
+        graphics.drawRect(mouseRect.x, mouseRect.y,
+            mouseRect.width, mouseRect.height);
       }
 
       graphics.dispose();
@@ -498,9 +500,6 @@ public class PagePane extends JPanel implements iSubscriber {
     MenuBar.miZoomOut.setEnabled(zoomFactor > 1.0);
   }
 
-  /**
-   * rectangularSelection.
-   */
   public void rectangularSelection(boolean bValue) {
     if (currentAction != CurrentAction.NONE) return;
     if (bValue) {
@@ -511,7 +510,7 @@ public class PagePane extends JPanel implements iSubscriber {
       currentAction = CurrentAction.NONE;
     }
   }
-  
+
   /**
    * Draw grid coordinates.
    *
@@ -1129,6 +1128,11 @@ public class PagePane extends JPanel implements iSubscriber {
       }
 
       Widget widget = findOne(mousePt);
+      // click on empty space, start rectangular selection
+      if (widget == null) {
+        currentAction = CurrentAction.RECTANGULAR_SELECTION;
+        return;
+      }
 
       if (currentAction == CurrentAction.RECTANGULAR_SELECTION) {
         donotSelectKey = null;

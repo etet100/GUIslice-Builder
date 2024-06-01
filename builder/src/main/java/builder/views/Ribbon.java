@@ -49,7 +49,7 @@ public class Ribbon extends JPanel {
 
   /** The quick access buttons */
   public QuickButton q_new, q_open, q_close,q_save,
-    q_code, q_exit, q_selection, q_copy_props, q_paste, 
+    q_code, q_exit, q_copy_props, q_paste,
     q_copy, q_cut, q_undo,q_redo,q_delete;
   
   /** The text elements */
@@ -200,13 +200,6 @@ public class Ribbon extends JPanel {
     q_redo.setEnabled(false);
     q_redo.addToolTip("Redo Actions");
     q_redo.setActionCommand("redo");
-    
-    quickbar.addSeperator();
-
-    q_selection = quickbar.addButton("q_selection");
-    q_selection.setImage(Utils.getIcon("resources/icons/layout/selection.png"));
-    q_selection.addToolTip("Rectangular Selection");
-    q_selection.setActionCommand("selection");
     
     quickbar.addSeperator();
 
@@ -660,7 +653,6 @@ public class Ribbon extends JPanel {
     q_undo.addActionListener(al);
     q_redo.addActionListener(al);
     q_delete.addActionListener(al);
-    q_selection.addActionListener(al);
     q_paste.addActionListener(al);
     q_copy.addActionListener(al);
     q_copy_props.addActionListener(al);
