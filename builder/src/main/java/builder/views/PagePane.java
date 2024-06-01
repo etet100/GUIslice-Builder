@@ -121,12 +121,6 @@ public class PagePane extends JPanel implements iSubscriber {
   /** The mouse rect. */
   private Rectangle mouseRect = new Rectangle();
   
-  // /** Cursor style will be CROSSHAIR in rectangular selection mode or arrow in default mode */
-  // public static Cursor  = new Cursor(Cursor.CROSSHAIR_CURSOR); 
-  
-  /** The selecting using a rubber band. */
-  private boolean bMultiSelectionBox = false;
-  
   /** The donotSelectKey */
   private String donotSelectKey = null;
 
@@ -374,7 +368,7 @@ public class PagePane extends JPanel implements iSubscriber {
         w.draw(g2d);
       }
     }
-    if (bMultiSelectionBox) {
+    if (currentAction == CurrentAction.RECTANGULAR_SELECTION) {
       // draw our selection rubber band
       g2d.setColor(Color.RED);
       g2d.setStroke(Widget.dashed);
@@ -1115,11 +1109,7 @@ public class PagePane extends JPanel implements iSubscriber {
         execute(resizeCommand);
         resizeCommand = null;
       }      
-      bMultiSelectionBox = false;
       currentAction = CurrentAction.NONE;
-      // bRectangularSelectionMode = false;
-      // bDragging = false;
-      // bResizing = false;
       setCursor(Cursor.getDefaultCursor());
       e.getComponent().repaint();
     }  // end mouseReleased
@@ -1137,26 +1127,22 @@ public class PagePane extends JPanel implements iSubscriber {
       if (currentAction == CurrentAction.DRAGGING_WIDGET) {
         currentAction = CurrentAction.NONE;
       }
-      // if (currentAction == CurrentAction.EDITING_GUIDELINES) {
-      //   Point unscaledPoint = PagePane.mapPoint(mousePt.x, mousePt.y);
-      //   //guidelines.getOne(unscaledPoint);
-      //   return;
-      // }
-      Widget w = findOne(mousePt);
+
+      Widget widget = findOne(mousePt);
+
       if (currentAction == CurrentAction.RECTANGULAR_SELECTION) {
-        bMultiSelectionBox = true;
         donotSelectKey = null;
-        if (w != null) {
-          donotSelectKey = w.getKey();
+        if (widget != null) {
+          donotSelectKey = widget.getKey();
         }
-      } else if (w != null) {
+      } else if (widget != null) {
         Point unscaledPoint = mapPoint(e.getPoint().x, e.getPoint().y);
-        HandleType handleType = w.getActionHandle(w.toWidgetSpace(unscaledPoint));
+        HandleType handleType = widget.getActionHandle(widget.toWidgetSpace(unscaledPoint));
         switch (handleType) {
           case DRAG:
           case DRAG_VERTICAL:
           case DRAG_HORIZONTAL:
-            if (w.isSelected() || w instanceof GuidelineWidget) {
+            if (widget.isSelected() || widget instanceof GuidelineWidget) {
               currentAction = CurrentAction.DRAGGING_WIDGET;
             }
             break;
@@ -1250,7 +1236,7 @@ public class PagePane extends JPanel implements iSubscriber {
 
     @Override
     public void mouseMoved(MouseEvent e) {
-      if (bMultiSelectionBox || currentAction != CurrentAction.NONE) {
+      if (currentAction != CurrentAction.NONE) {
         return;
       }
 
@@ -1324,17 +1310,18 @@ public class PagePane extends JPanel implements iSubscriber {
      */
     @Override
     public void mouseDragged(MouseEvent e) {
-      if (bMultiSelectionBox) {
+      Point unscaledPoint = mapPoint(e.getPoint());
+      if (currentAction == CurrentAction.RECTANGULAR_SELECTION) {
+        Point unscaledStartPoint = mapPoint(mousePt);
         // Here I'm working out the size and position of my rubber band
         mouseRect.setBounds(
-            Math.min(mousePt.x, e.getX()),
-            Math.min(mousePt.y, e.getY()),
-            Math.abs(mousePt.x - e.getX()),
-            Math.abs(mousePt.y - e.getY()));
+            Math.min(unscaledStartPoint.x, unscaledPoint.x),
+            Math.min(unscaledStartPoint.y, unscaledPoint.y),
+            Math.abs(unscaledStartPoint.x - unscaledPoint.x),
+            Math.abs(unscaledStartPoint.y - unscaledPoint.y));
         // Now select any widgets that fit inside our rubber band
         selectRect(mouseRect);
       } else if (currentAction == CurrentAction.DRAGGING_WIDGET) {
-        Point unscaledPoint = mapPoint(e.getPoint());
         if (dragCommand == null) {
           dragCommand = new DragWidgetCommand(
               instance,
@@ -1346,7 +1333,6 @@ public class PagePane extends JPanel implements iSubscriber {
                   gridModel.getGridMinorHeight()));
           if (!dragCommand.start(unscaledPoint)) {
             currentAction = CurrentAction.NONE;
-            bMultiSelectionBox = false;
             dragCommand = null;
             repaint();
             return;
@@ -1359,7 +1345,6 @@ public class PagePane extends JPanel implements iSubscriber {
         if (resizeCommand == null) {
           System.out.println("resizeCommand is null");
         } else {
-          Point unscaledPoint = mapPoint(e.getPoint());
           resizeCommand.move(unscaledPoint, e.isAltDown(), e.isControlDown());
         }
       }
