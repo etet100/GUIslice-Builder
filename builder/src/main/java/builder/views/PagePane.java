@@ -61,6 +61,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JViewport;
 import javax.swing.KeyStroke;
 import javax.swing.event.AncestorEvent;
@@ -71,6 +72,7 @@ import javax.swing.event.AncestorListener;
 
 import builder.Builder;
 import builder.commands.Command;
+import builder.commands.DelWidgetCommand;
 import builder.commands.DragByArrowCommand;
 import builder.commands.DragWidgetCommand;
 import builder.commands.ResizeCommand;
@@ -157,16 +159,18 @@ public class PagePane extends JPanel implements iSubscriber {
   private static Ribbon ribbon = null;
   
   /** The drag command. */
-  public DragWidgetCommand dragCommand = null;
+  private DragWidgetCommand dragCommand = null;
   
   /** The resize command. */ 
-  public ResizeCommand resizeCommand = null;
+  private ResizeCommand resizeCommand = null;
   
   /** The drag using arrows command */
-  public DragByArrowCommand dragArrowsCommand = null;
+  private DragByArrowCommand dragArrowsCommand = null;
 
   /** Guidelines used by resizing and snapping commands */
   private static Guidelines guidelines = Guidelines.getInstance();
+
+  private JPopupMenu popupMenu;
 
   private AdvancedSnappingModel advancedSnappingModel = AdvancedSnappingModel.getInstance();
 
@@ -221,6 +225,7 @@ public class PagePane extends JPanel implements iSubscriber {
     pm = Controller.getProjectModel();
     gridModel = (GridModel) GridEditor.getInstance().getModel();
     model = new PageModel();
+    popupMenu = new JPopupMenu();
 //    mousePt = new Point(pm.getWidth() / 2, pm.getHeight() / 2);
     MouseHandler mouseHandler = new MouseHandler();
     this.addMouseListener(mouseHandler);
@@ -453,7 +458,7 @@ public class PagePane extends JPanel implements iSubscriber {
   /**
    * create a transform
    */
-  public void zoomTransform() {
+  private void zoomTransform() {
     pageTransform = new AffineTransform();
     pageTransform.translate(pageOffset.getX(), pageOffset.getY());
     pageTransform.scale(zoomFactor, zoomFactor);
@@ -497,12 +502,6 @@ public class PagePane extends JPanel implements iSubscriber {
     ribbon.enableZoomOut(zoomFactor > 1.0);
     MenuBar.miZoomReset.setEnabled(zoomFactor != 1.0);
     MenuBar.miZoomOut.setEnabled(zoomFactor > 1.0);
-  }
-
-  public void zoomOff() {
-    zoomFactor = 1.0;
-    zoomTransform();
-    updateRibbonAndMenu();
   }
 
   /**
@@ -899,7 +898,7 @@ public class PagePane extends JPanel implements iSubscriber {
    *          the <code>Point</code> object
    * @return the matching <code>Widget</code> object or null.
    */
-  public Widget findOne(Point p) {
+  private Widget findOne(Point p) {
     // we may need to deal with scaled points because of zoom feature
     Point2D pos = p;
     if (zoomFactor > 1 || pageOffset.x > 0 || pageOffset.y > 0) {
@@ -999,6 +998,25 @@ public class PagePane extends JPanel implements iSubscriber {
       mousePt = e.getPoint();
       int button = e.getButton();
       if (button != MouseEvent.BUTTON1) {
+        // right
+        if (button == MouseEvent.BUTTON3) {
+          Widget w = findOne(mousePt);
+          if (w == null || !w.isSelected()) {
+            return;
+          }
+          popupMenu.removeAll();
+          popupMenu.add("Remove").addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+              DelWidgetCommand command = new DelWidgetCommand(PagePane.this);
+              if (command.delete()) {
+                execute(command);
+              }
+            }
+          });
+          popupMenu.show(PagePane.this, e.getPoint().x, e.getPoint().y);
+        }
+
 //    System.out.println("button != MouseEvent.BUTTON1");
         return;
       }
@@ -1389,6 +1407,7 @@ public class PagePane extends JPanel implements iSubscriber {
     }
     repaint();
   }
+
   /**
    * updateEvent provides the implementation of Observer Pattern. It monitors
    * selection of widgets in the tree view, modification of widgets by commands,
@@ -1534,9 +1553,6 @@ public class PagePane extends JPanel implements iSubscriber {
    * so exact or even close matches may no be possible.  Users may need to
    * manually change fonts. Although, generally fonts will simply work without
    * any changes.
-   * 
-   * @param ratioX
-   * @param ratioY
    */
   public void scale(double ratioX, double ratioY) {
     int newX, newY, newHeight, newWidth;
