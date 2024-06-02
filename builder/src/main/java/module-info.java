@@ -11,6 +11,7 @@ module builder {
   requires com.formdev.flatlaf;
   requires com.formdev.flatlaf.intellijthemes;
   requires org.fife.RSyntaxTextArea;
+  requires swing.toast.notifications;
   exports  builder.clipboard;
   exports  builder.controller;
   exports  builder.commands;

@@ -321,8 +321,11 @@ dependencies {
     // implementation fileTree(include: ['*.jar'], dir: './libs')
     implementation 'com.google.code.gson:gson:2.8.6'
     implementation 'hu.csekme:RibbonMenu:1.0.6'
-    implementation 'com.formdev:flatlaf:3.3'
+    implementation 'com.formdev:flatlaf:3.4.1'
+    implementation 'com.formdev:flatlaf-extras:3.4.1'
+    implementation 'com.github.weisj:jsvg:1.4.0'
     implementation 'org.fife:RSyntaxTextArea:3.2.0'
-    implementation 'com.formdev:flatlaf-intellij-themes:3.3'
+    implementation 'com.formdev:flatlaf-intellij-themes:3.4.1'
+    implementation 'raven.toast:swing-toast-notifications:1.0.3'
 //   // runtimeOnly (runtime)
 }

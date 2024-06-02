@@ -105,6 +105,7 @@ import builder.themes.GUIsliceThemeFactory;
 import builder.views.PagePane;
 import builder.views.TreeView;
 import builder.widgets.Widget;
+import raven.toast.Notifications;
 
 /**
  * The Class Controller of the Model View Controller Pattern.
@@ -868,6 +869,19 @@ public class Controller extends JInternalFrame
     createFirstPage();
     this.setVisible(true);
     Builder.logger.debug("New Project");
+
+    Notifications.getInstance().show(
+      Notifications.Type.INFO,
+      Notifications.Location.TOP_RIGHT,
+      1000,
+      "It's a good idea to save your project before opening a new one."
+    );
+    Notifications.getInstance().show(
+      Notifications.Type.ERROR,
+      Notifications.Location.TOP_RIGHT,
+      2000,
+      "It's a good idea to save your project before opening a new one."
+    );
   }
 
   /**
