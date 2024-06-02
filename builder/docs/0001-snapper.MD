@@ -15,3 +15,7 @@ Snapper ribbon menu:
 Snapper with all visibility options enabled:
 
 ![alt text](images/0001-snapper/image-1.png)
+
+Perfectly aligned elements, every time:
+
+![alt text](images/0001-snapper/image-2.png)
