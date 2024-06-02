@@ -12,12 +12,12 @@ Elements that are being worked on now:
 
 ## Differences from the original version:
 
-- Snap to grid feature has been extended. [More info](https://github.com/etet100/GUIslice-Builder/blob/master/docs/0001-snapper.MD)
-- Zoom per page. The user can set the zoom level for each page separately. [More info](https://github.com/etet100/GUIslice-Builder/blob/master/docs/0002-zoom_per_page.MD)
-- Centering the work area on the screen. [More info](https://github.com/etet100/GUIslice-Builder/blob/master/docs/builder/docs/0003-center_work_area.MD)
-- Popup/context menu for the right mouse button. [More info](https://github.com/etet100/GUIslice-Builder/blob/master/docs/0004-context_menu.MD)
-- Removed rectangular selection toolbar button. The user can select multiple elements by holding the left mouse button and dragging the cursor. [More info](https://github.com/etet100/GUIslice-Builder/blob/master/docs/0005-rectangular_selection.MD)
-- Improved menu ribbon - added toggle buttons, changes icons, added contextual cursors. [More info](https://github.com/etet100/GUIslice-Builder/blob/master/docs/0006-ribbon_menu.MD)
+- Snap to grid feature has been extended. [More info](builder/docs/0001-snapper.MD)
+- Zoom per page. The user can set the zoom level for each page separately. [More info](builder/docs/0002-zoom_per_page.MD)
+- Centering the work area on the screen. [More info](builder/docs/builder/docs/0003-center_work_area.MD)
+- Popup/context menu for the right mouse button. [More info](builder/docs/0004-context_menu.MD)
+- Removed rectangular selection toolbar button. The user can select multiple elements by holding the left mouse button and dragging the cursor. [More info](builder/docs/0005-rectangular_selection.MD)
+- Improved menu ribbon - added toggle buttons, changes icons, added contextual cursors. [More info](builder/docs/0006-ribbon_menu.MD)
 
 ---
 
