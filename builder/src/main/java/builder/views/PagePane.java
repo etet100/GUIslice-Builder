@@ -373,9 +373,12 @@ public class PagePane extends JPanel implements iSubscriber {
     g2d.dispose();
 
     boolean widgetActionInProgress = (currentAction == CurrentAction.RESIZING_WIDGET && resizeCommand != null) ||
-        (currentAction == CurrentAction.DRAGGING_WIDGET && dragCommand != null) ||
-        (currentAction == CurrentAction.RECTANGULAR_SELECTION);
-    if (widgetActionInProgress || advancedSnappingModel.isEditGuidelines() || advancedSnappingModel.isShowMargins() || advancedSnappingModel.isShowGuidelines()) {
+        (currentAction == CurrentAction.DRAGGING_WIDGET && dragCommand != null);
+    if (
+      widgetActionInProgress ||
+      advancedSnappingModel.isEditGuidelines() || advancedSnappingModel.isShowMargins() || advancedSnappingModel.isShowGuidelines() ||
+      currentAction == CurrentAction.RECTANGULAR_SELECTION
+    ) {
       final ScaledGraphics graphics = new ScaledGraphics((Graphics2D) g.create(), zoomFactor, pageOffset);
 
       // dashed stroke for all features
@@ -443,12 +446,9 @@ public class PagePane extends JPanel implements iSubscriber {
    * set Zoom factor, not used anymore from open project!
    */
   public void setZoom(double zoom) {
-    ribbon.enableZoomOut(zoom > 1.0);
-    ribbon.enableZoomReset(zoom != 1.0);
-    MenuBar.miZoomOut.setEnabled(zoom > 1.0);
-    MenuBar.miZoomReset.setEnabled(zoom != 1.0);
     zoomFactor = zoom;
     zoomTransform();
+    updateRibbonAndMenu();
   }
 
   /**
