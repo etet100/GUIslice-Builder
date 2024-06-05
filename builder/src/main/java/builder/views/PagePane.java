@@ -322,13 +322,6 @@ public class PagePane extends MainSectionPane implements iSubscriber {
     }
   }
 
-  /**
-   * paintComponent.
-   *
-   * @param g
-   *          the g
-   * @see javax.swing.JComponent#paintComponent(java.awt.Graphics)
-   */
   @Override
   protected void paintComponent(Graphics g) {
     super.paintComponent(g);

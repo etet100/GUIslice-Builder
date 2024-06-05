@@ -70,17 +70,8 @@ import java.util.List;
  */
 public class Utils {
   
-  /** The instance. */
   private static Utils instance = null;
   
-  /** Backup Folder Name. */
-  private static final String BACKUP_FOLDER = "gui_backup";
-  
-  /**
-   * getInstance() - get our Singleton Object.
-   *
-   * @return instance
-   */
   public static synchronized Utils getInstance() {
     if (instance == null) {
       instance = new Utils();
@@ -88,10 +79,10 @@ public class Utils {
     return instance;
   }
 
-  /**
-   * empty constructor.
-   */
-  public Utils() {
+  /** Backup Folder Name. */
+  private static final String BACKUP_FOLDER = "gui_backup";
+
+  private Utils() {
   }
 
   /**
