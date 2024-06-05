@@ -85,6 +85,7 @@ import builder.commands.PasteCommand;
 import builder.common.EnumFactory;
 import builder.common.Guidelines;
 import builder.common.Utils;
+import builder.dictionary.PageTypeDictionary;
 import builder.events.MsgBoard;
 import builder.events.MsgEvent;
 import builder.events.iSubscriber;
@@ -102,7 +103,9 @@ import builder.prefs.NumKeyPadEditor;
 import builder.project.Project;
 import builder.themes.GUIsliceTheme;
 import builder.themes.GUIsliceThemeFactory;
+import builder.views.MainSectionPane;
 import builder.views.PagePane;
+import builder.views.ProjectPane;
 import builder.views.TreeView;
 import builder.widgets.Widget;
 import raven.toast.Notifications;
@@ -142,10 +145,10 @@ public class Controller extends JInternalFrame
   private String strTheme;
   
   /** The current page. */
-  private static PagePane currentPage;
+  private static MainSectionPane currentPage;
   
   /** The project page which hold all options */
-  private PagePane projectPage;
+  private ProjectPane projectPage;
   
   /** The project file. */
   private static File projectFile = null;
@@ -169,7 +172,7 @@ public class Controller extends JInternalFrame
   static int nBasePages;
   
   /** The base page, if any. */
-  static private PagePane basePage;
+  // static private PagePane basePage;
 
   /** The litr. */
   ListIterator<PagePane> litr;
@@ -227,7 +230,7 @@ public class Controller extends JInternalFrame
       }
     });
     nBasePages = 0;
-    basePage = null;
+   //basePage = null;
     tabbedPane.setPreferredSize(new Dimension(1200,1200));
     createFirstPage();
 //    tabbedPane.setSelectedIndex(0);
@@ -286,12 +289,12 @@ public class Controller extends JInternalFrame
    * get widget list for base page, if any
    * @return list of widgets, or null
    */
-  public static List<Widget> getBaseWidgets() {
-    if (nBasePages > 0) {
-      return basePage.getWidgets();
-    }
-    return null;
-  }
+//   public static List<Widget> getBaseWidgets() {
+//     if (nBasePages > 0) {
+//       return basePage.getWidgets();
+//     }
+//     return null;
+//   }
   
   /**
    * get project model's Target Platform 
@@ -328,12 +331,10 @@ public class Controller extends JInternalFrame
     }
     pm.setReadOnlyProperties();
     pm.TurnOnEvents();
-    PagePane p = new PagePane();
-    p.setLayout(null);
-    p.setModel(pm);
-    p.setPageType(EnumFactory.PROJECT);
-    projectPage = p;
-    addPage(p);
+    ProjectPane pane = new ProjectPane(pm);
+    pane.setLayout(null);
+    projectPage = pane;
+    addPage(pane);
   }
   
   
@@ -354,16 +355,16 @@ public class Controller extends JInternalFrame
    */
   public PagePane findPage(String pageKey) {
     litr = pages.listIterator();
-    PagePane p = null;
+    PagePane pane = null;
     String searchKey;
-    while(litr.hasNext()){
-      p = litr.next();
-      searchKey = p.getKey();
+    while (litr.hasNext()){
+      pane = litr.next();
+      searchKey = pane.getKey();
       if (searchKey.equals(pageKey)) {
         break;
       }
     }
-    return p;
+    return pane;
   }
   
   /**
@@ -410,29 +411,31 @@ public class Controller extends JInternalFrame
   /**
    * Adds the page to view.
    *
-   * @param page
+   * @param pane
    *          the page
    */
-  public void addPageToView(PagePane page) {
-    scrollPane = new JScrollPane(page,
+  public void addPageToView(MainSectionPane pane) {
+    scrollPane = new JScrollPane(pane,
         JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, 
         JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-    if (page.getPageType().equals(EnumFactory.BASEPAGE)) {
-      pages.add(1,page);
+    if (pane instanceof PagePane pagePane && pagePane.getPageType().equals(EnumFactory.BASEPAGE)) {
+      pages.add(1, pagePane);
       nBasePages++;
-      basePage = page;
-      tabPages.add(1,page.getKey());
-      tabbedPane.insertTab(page.getEnum(), ic_base_tab, scrollPane, null, 1);
+      //basePage = pagePane;
+      tabPages.add(1,pane.getKey());
+      tabbedPane.insertTab(pane.getEnum(), ic_base_tab, scrollPane, null, 1);
       tabbedPane.setSelectedIndex(1);
     } else {
-      pages.add(page);
-      tabPages.add(page.getKey());
-      if (page.getPageType().equals(EnumFactory.PAGE)) {
-        tabbedPane.addTab(page.getEnum(), ic_page_tab, scrollPane);
-      } else if (page.getPageType().equals(EnumFactory.PROJECT)) {
-        tabbedPane.addTab(page.getEnum(), ic_project_tab, scrollPane);
-      } else {
-        tabbedPane.addTab(page.getEnum(), ic_popup_tab, scrollPane);
+      tabPages.add(pane.getKey());
+      if (pane instanceof ProjectPane) {
+        tabbedPane.addTab(pane.getEnum(), ic_project_tab, scrollPane);
+      } else if (pane instanceof PagePane pagePane) {
+        pages.add(pagePane);
+        if (pagePane.getPageType() == PageTypeDictionary.PAGE) {
+          tabbedPane.addTab(pane.getEnum(), ic_page_tab, scrollPane);
+        } else {
+          tabbedPane.addTab(pane.getEnum(), ic_popup_tab, scrollPane);
+        }
       }
       tabbedPane.setSelectedIndex(tabPages.size()-1);
     }
@@ -440,7 +443,7 @@ public class Controller extends JInternalFrame
     if (currentPage != null) {
       currentPage.setActive(false);
     }
-    currentPage = page;
+    currentPage = pane;
     currentPage.setActive(true);
   }
 
@@ -451,13 +454,10 @@ public class Controller extends JInternalFrame
    *          the page key
    */
   public void changePage(String pageKey) {
-    PagePane page = findPage(pageKey);
-    if (page != null) {
+    MainSectionPane pane = findPage(pageKey);
+    if (pane != null) {
       int idx = findPageIdx(pageKey);
-      if (currentPage != null) {
-        currentPage.selectNone();
-      }
-      currentPage = page;
+      currentPage = pane;
       tabbedPane.setSelectedIndex(idx);
       tabbedPane.repaint();
       currentPage.setActive(true);
@@ -472,7 +472,7 @@ public class Controller extends JInternalFrame
    *          the page key
    */
   public void changePageNoMsg(String pageKey) {
-    PagePane page = findPage(pageKey);
+    MainSectionPane page = findPage(pageKey);
     if (page != null) {
       int idx = findPageIdx(pageKey);
       if (currentPage != null) {
@@ -498,7 +498,7 @@ public class Controller extends JInternalFrame
     if (idx == -1) return;
     if (idx <= tabPages.size()) {
       pageKey = tabPages.get(idx);
-      PagePane page = findPage(pageKey);
+      MainSectionPane page = pageKey == "project" ? projectPage : findPage(pageKey);
       if (page != null) {
         if (currentPage != null && currentPage != page) {
           currentPage.setActive(false);
@@ -524,8 +524,9 @@ public class Controller extends JInternalFrame
     if (!e.xdata.equals(currentPage.getKey())) {
       changePage(e.xdata);
     }
+    if (!(currentPage instanceof PagePane pagePane)) { return; }
     String tree_backup = TreeView.getInstance().getSavedBackup();
-    ChangeZOrderCommand c = new ChangeZOrderCommand(currentPage, tree_backup);
+    ChangeZOrderCommand c = new ChangeZOrderCommand(pagePane, tree_backup);
     c.change(e.message, e.fromIdx, e.toIdx);
     execute(c);
   }
@@ -539,7 +540,7 @@ public class Controller extends JInternalFrame
    */
   public void changePageEnum(MsgEvent e) {
     String pageKey = e.message;
-    PagePane page = findPage(pageKey);
+    MainSectionPane page = findPage(pageKey);
     if (page != null) {
       int idx = findPageIdx(pageKey);
       tabbedPane.setTitleAt(idx, e.xdata);
@@ -563,7 +564,9 @@ public class Controller extends JInternalFrame
       if (!e.xdata.equals(currentPage.getKey())) {
         changePageNoMsg(e.xdata);
       }
-      currentPage.objectSelectedTreeView(e.message);
+      if (currentPage instanceof PagePane pagePane) {
+        pagePane.objectSelectedTreeView(e.message);
+      }
     }
   }
   
@@ -581,7 +584,7 @@ public class Controller extends JInternalFrame
     m.setKey(pageKey);
     String pageEnum = EnumFactory.getInstance().createEnum(EnumFactory.PAGE);
     m.setEnum(pageEnum);
-    page.setPageType(EnumFactory.PAGE);
+    page.setPageType(PageTypeDictionary.PAGE);
     addPageToView(page);
     PropManager.getInstance().addPropEditor(page.getModel());
     TreeView.getInstance().addPage(page.getKey(), pageEnum);
@@ -592,19 +595,19 @@ public class Controller extends JInternalFrame
    * this function is called directly by toolbox when page button is pressed
    * It builds an AddPageCommand for undo and redo.
    */
-  public void createPage(String sWidgetType) {
+  public void createPage(String widgetType) {
 //    AddPageCommand c = new AddPageCommand(this);
     PagePane p = new PagePane();
     p.setLayout(null);
     PageModel m = (PageModel) p.getModel();
     String pageKey = null;
-    if (sWidgetType.equals(EnumFactory.PAGE)) {
+    if (widgetType.equals(EnumFactory.PAGE)) {
       pageKey = EnumFactory.getInstance().createKey(EnumFactory.PAGE);
       m.setKey(pageKey);
       m.setEnum(EnumFactory.getInstance().createEnum(EnumFactory.PAGE));
       // NOTE: must set type on page pane not model or messages will be lost!
-      p.setPageType(EnumFactory.PAGE);
-    } else  if (sWidgetType.equals(EnumFactory.BASEPAGE)) {
+      p.setPageType(PageTypeDictionary.PAGE);
+    } else  if (widgetType.equals(EnumFactory.BASEPAGE)) {
       if (nBasePages > 0) {
         JOptionPane.showMessageDialog(topFrame, 
             "Sorry, You can only define one Base Page", 
@@ -616,13 +619,13 @@ public class Controller extends JInternalFrame
       m.setKey(pageKey);
       m.setEnum(EnumFactory.getInstance().createEnum(EnumFactory.BASEPAGE));
       // NOTE: must set type on page pane not model or messages will be lost!
-      p.setPageType(EnumFactory.BASEPAGE);
+      p.setPageType(PageTypeDictionary.BASEPAGE);
     } else {
       pageKey = EnumFactory.getInstance().createKey(EnumFactory.POPUP);
       m.setKey(pageKey);
       m.setEnum(EnumFactory.getInstance().createEnum(EnumFactory.POPUP));
       // NOTE: must set type on page pane not model or messages will be lost!
-      p.setPageType(EnumFactory.POPUP);
+      p.setPageType(PageTypeDictionary.POPUP);
     }
 /* 
  * undo of adding pages is too complex to support correctly at the moment
@@ -640,7 +643,7 @@ public class Controller extends JInternalFrame
    *          the page
    */
   // this function is called by AddPageCommand
-  public void addPage(PagePane page) {
+  public void addPage(MainSectionPane page) {
     addPageToView(page);
     PropManager.getInstance().addPropEditor(page.getModel());
     TreeView.getInstance().addPage(page.getKey(), page.getEnum());
@@ -651,8 +654,10 @@ public class Controller extends JInternalFrame
    * This function is called when user presses delete button
    */
   public void removeComponent() {
+    if (!(currentPage instanceof PagePane pagePane)) { return; }
+
     // Determine if we are to delete a widget or a page
-    List<Widget> list= currentPage.getSelectedList();
+    List<Widget> list = pagePane.getSelectedList();
     /* if no widgets are selected on the current page
      * ask the treeview who it has selected, if any
      */
@@ -662,9 +667,9 @@ public class Controller extends JInternalFrame
        */
       String selected = TreeView.getInstance().getSelectedWidget();
       if (selected != null && !selected.isEmpty()) {
-        PagePane p = findPage(selected);
-        if (p != null) {
-            removePage(p);
+        MainSectionPane pane = findPage(selected);
+        if (pane != null) {
+            removePage((PagePane) pane);
             return;
         } else {  // widget it is...
           delWidget();
@@ -758,21 +763,21 @@ public class Controller extends JInternalFrame
     MsgBoard.remove(page.getKey());
     if (page.getPageType().equals(EnumFactory.BASEPAGE)) {
       nBasePages=0;
-      basePage = null;
+      //basePage = null;
     }
-    PagePane p = null;
+    MainSectionPane pane = null;
     litr = pages.listIterator();
     int idx = 0;
-    while(litr.hasNext()){
-      p = litr.next();
-      if (p.getKey().equals(page.getKey())) {
+    while (litr.hasNext()){
+      pane = litr.next();
+      if (pane.getKey().equals(page.getKey())) {
         litr.remove();
         idx = findPageIdx(page.getKey());
         tabbedPane.remove(idx);
         tabbedPane.repaint();
         tabPages.remove(idx);
         TreeView.getInstance().delPage(page.getKey());
-        if (p.getPageType().equals(EnumFactory.BASEPAGE))
+        if (pane.getPageType() == PageTypeDictionary.BASEPAGE)
           nBasePages=0;
         if (pages.size() > 1)
           changePage(pages.get(1).getKey());
@@ -793,7 +798,7 @@ public class Controller extends JInternalFrame
    *          the page widget type
    * @return the <code>page pane</code> object
    */
-  private PagePane restorePage(String pageKey, String pageEnum, String pageType){
+  private PagePane restorePage(String pageKey, String pageEnum, PageTypeDictionary pageType){
     PagePane page = new PagePane();
     page.setLayout(null);
     PageModel m = (PageModel) page.getModel();
@@ -805,33 +810,31 @@ public class Controller extends JInternalFrame
     return page;
   }
   
-  private PagePane restoreProject(){
-    PagePane p = new PagePane();
-    p.setLayout(null);
-    p.setModel(pm);
-    p.setPageType(EnumFactory.PROJECT);
-    projectPage = p;
-    addPageToView(p);
+  private ProjectPane restoreProject(){
+    ProjectPane pagePane = new ProjectPane(pm);
+    pagePane.setLayout(null);
+    projectPage = pagePane;
+    addPageToView(pagePane);
     PropManager.getInstance().addPropEditor(pm);
-    return p;
+    return pagePane;
   }
   
   /**
    * Adds the widget.
    *
-   * @param w
+   * @param widget
    *          the w
    */
-  public void addWidget(Widget w) {
-    if (currentPage == projectPage) {
+  public void addWidget(Widget widget) {
+    if (!(currentPage instanceof PagePane pagePane)) {
       JOptionPane.showMessageDialog(null, 
          "You can't add UI Elements to your Project Options Panel", 
          "Add Failed", JOptionPane.WARNING_MESSAGE);
       return;
     }
-    AddWidgetCommand c = new AddWidgetCommand(currentPage);
-    c.add(w);
-    currentPage.execute(c);
+    AddWidgetCommand command = new AddWidgetCommand(pagePane);
+    command.add(widget);
+    pagePane.execute(command);
   }
   
   /**
@@ -841,6 +844,7 @@ public class Controller extends JInternalFrame
    *          the list
    */
   private void delWidget() {
+    if (!(currentPage instanceof PagePane pagePane)) { return; }
     if (JOptionPane.showConfirmDialog(topFrame, 
        "You really want to want to delete selected element(s)?", 
        "Delete", 
@@ -848,9 +852,9 @@ public class Controller extends JInternalFrame
        JOptionPane.QUESTION_MESSAGE) == JOptionPane.NO_OPTION){
          return;
     }
-    DelWidgetCommand c = new DelWidgetCommand(currentPage);
+    DelWidgetCommand c = new DelWidgetCommand(pagePane);
     if (c.delete()) {
-      currentPage.execute(c);
+      pagePane.execute(c);
       topFrame.repaint();
     } else {
       selectionWarning();
@@ -891,8 +895,8 @@ public class Controller extends JInternalFrame
     this.setVisible(false);
     tabPages.clear();
     tabbedPane.removeAll();
-    for (PagePane p : pages) {
-      MsgBoard.remove(p.getKey());
+    for (MainSectionPane pane : pages) {
+      MsgBoard.remove(pane.getKey());
     }
     pages.clear();
     currentPage = null;
@@ -964,19 +968,21 @@ public class Controller extends JInternalFrame
     String pageEnum = null;
     String pageType = null;
 //    System.out.println("pages: " + pages.size());
-    for (PagePane p : pages) {
-      p.selectNone();  // turn off all selections
-      pageKey = (String)p.getKey();
-      pageEnum = (String)p.getEnum();
-      pageType = (String)p.getPageType();
-//    System.out.println("save page: " + pageKey);
-      out.writeObject(pageKey);
-//    System.out.println("save page: " + pageEnum);
-      out.writeObject(pageEnum);
-//    System.out.println("save page: " + pageType);
-      out.writeObject(pageType);
-      // now backup our model data to a base64 string
-      out.writeObject(p.backup());
+    for (MainSectionPane pane : pages) {
+      if (pane instanceof PagePane pagePane) {
+        pagePane.selectNone();  // turn off all selections
+        pageKey = (String) pane.getKey();
+        pageEnum = (String) pane.getEnum();
+        pageType = pagePane.getPageType().toString();
+  //    System.out.println("save page: " + pageKey);
+        out.writeObject(pageKey);
+  //    System.out.println("save page: " + pageEnum);
+        out.writeObject(pageEnum);
+  //    System.out.println("save page: " + pageType);
+        out.writeObject(pageType);
+        // now backup our model data to a base64 string
+        out.writeObject(pagePane.backup());
+      }
     }
     out.writeLong(0);  // extra value to avoid java.io.EOFException
     out.flush();
@@ -1129,14 +1135,14 @@ public class Controller extends JInternalFrame
       return;
     }
     nBasePages = 0;
-    basePage = null;
+    //basePage = null;
     PropManager propMgr = PropManager.getInstance();
     propMgr.openProject();
     String pageKey = null;
     String pageEnum = null;
     String pageType = null;
     String openPage = null;
-    PagePane p = null;
+    MainSectionPane pane = null;
     try {
       // Read in version number
       String strVersion = (String)in.readObject();
@@ -1174,14 +1180,16 @@ public class Controller extends JInternalFrame
             nBasePages++;
           }
         }
-        if (pageType.equals(EnumFactory.PROJECT)) {
-          p = restoreProject();
-        } else {
-          p = restorePage(pageKey, pageEnum, pageType);
-        }
-        p.restore((String)in.readObject(), false);
-        p.selectNone();
-        if (pageType != null) p.setPageType(pageType);
+        // if (pageType.equals(EnumFactory.PROJECT)) {
+        //   pane = restoreProject();
+        // } else {
+        //   pane = restorePage(pageKey, pageEnum, pageType);
+        // }
+        // pane.restore((String)in.readObject(), false);
+        // pane.selectNone();
+        // if (pageType != null) {
+        //   if (pageType.equals(EnumFactory.BASEPAGE) pane.setPageType(pageType);
+        // }
       }
       if (strVersion.equals("1.01")) {
         @SuppressWarnings("unused")
@@ -1194,7 +1202,7 @@ public class Controller extends JInternalFrame
         @SuppressWarnings("unused")
         String enum_backup = (String)in.readObject();
       }
-      EnumFactory.getInstance().resetCounts(pages);
+      //EnumFactory.getInstance().resetCounts(pages);
       MsgBoard.sendEvent("Controller",MsgEvent.OBJECT_UNSELECT_PAGEPANE);
       MsgBoard.sendEvent("Controller",MsgEvent.OBJECT_UNSELECT_TREEVIEW);
       MsgBoard.sendEvent("Controller",MsgEvent.TREEVIEW_RESET);
@@ -1215,9 +1223,10 @@ public class Controller extends JInternalFrame
    * Group buttons.
    */
   public void groupButtons() {
-    GroupCommand c = new GroupCommand(currentPage);
-    if (c.group()) {
-      execute(c);
+    if (!(currentPage instanceof PagePane pagePane)) return;
+    GroupCommand command = new GroupCommand(pagePane);
+    if (command.group()) {
+      execute(command);
     } else {
       JOptionPane.showMessageDialog(topFrame, 
           "You must select multiple RadioButtons to group them.",
@@ -1230,9 +1239,10 @@ public class Controller extends JInternalFrame
    * Align top.
    */
   public void alignTop() {
-    AlignTopCommand c = new AlignTopCommand(currentPage);
-    if (c.align()) {
-      execute(c);
+    if (!(currentPage instanceof PagePane pagePane)) return;
+    AlignTopCommand command = new AlignTopCommand(pagePane);
+    if (command.align()) {
+      execute(command);
     }
   }
   
@@ -1240,9 +1250,10 @@ public class Controller extends JInternalFrame
    * Align bottom.
    */
   public void alignBottom() {
-    AlignBottomCommand c = new AlignBottomCommand(currentPage);
-    if (c.align()) {
-      execute(c);
+    if (!(currentPage instanceof PagePane pagePane)) return;
+    AlignBottomCommand command = new AlignBottomCommand(pagePane);
+    if (command.align()) {
+      execute(command);
     }
   }
   
@@ -1250,9 +1261,10 @@ public class Controller extends JInternalFrame
    * Align center.
    */
   public void alignCenter() {
-    AlignCenterCommand c = new AlignCenterCommand(currentPage);
-    if (c.align()) {
-      execute(c);
+    if (!(currentPage instanceof PagePane pagePane)) return;
+    AlignCenterCommand command = new AlignCenterCommand(pagePane);
+    if (command.align()) {
+      execute(command);
     }
   }
   
@@ -1260,9 +1272,10 @@ public class Controller extends JInternalFrame
    * Align width.
    */
   public void alignWidth() {
-    AlignWidthCommand c = new AlignWidthCommand(currentPage);
-    if (c.align()) {
-      execute(c);
+    if (!(currentPage instanceof PagePane pagePane)) return;
+    AlignWidthCommand command = new AlignWidthCommand(pagePane);
+    if (command.align()) {
+      execute(command);
     } else {
       selectionWarning();
     }
@@ -1272,9 +1285,10 @@ public class Controller extends JInternalFrame
    * Align height.
    */
   public void alignHeight() {
-    AlignHeightCommand c = new AlignHeightCommand(currentPage);
-    if (c.align()) {
-      execute(c);
+    if (!(currentPage instanceof PagePane pagePane)) return;
+    AlignHeightCommand command = new AlignHeightCommand(pagePane);
+    if (command.align()) {
+      execute(command);
     } else {
       selectionWarning();
     }
@@ -1284,9 +1298,10 @@ public class Controller extends JInternalFrame
    * Align left.
    */
   public void alignLeft() {
-    AlignLeftCommand c = new AlignLeftCommand(currentPage);
-    if (c.align()) {
-      execute(c);
+    if (!(currentPage instanceof PagePane pagePane)) return;
+    AlignLeftCommand command = new AlignLeftCommand(pagePane);
+    if (command.align()) {
+      execute(command);
     } 
   }
   
@@ -1294,9 +1309,10 @@ public class Controller extends JInternalFrame
    * Align right.
    */
   public void alignRight() {
-    AlignRightCommand c = new AlignRightCommand(currentPage);
-    if (c.align()) {
-      execute(c);
+    if (!(currentPage instanceof PagePane pagePane)) return;
+    AlignRightCommand command = new AlignRightCommand(pagePane);
+    if (command.align()) {
+      execute(command);
     }
   }
   
@@ -1304,9 +1320,10 @@ public class Controller extends JInternalFrame
    * Align V spacing.
    */
   public void alignVSpacing() {
-    AlignVSpacingCommand c = new AlignVSpacingCommand(currentPage);
-    if (c.align()) {
-      execute(c);
+    if (!(currentPage instanceof PagePane pagePane)) return;
+    AlignVSpacingCommand command = new AlignVSpacingCommand(pagePane);
+    if (command.align()) {
+      execute(command);
     } else {
       selectionWarning();
     }
@@ -1316,9 +1333,10 @@ public class Controller extends JInternalFrame
    * Align H spacing.
    */
   public void alignHSpacing() {
-    AlignHSpacingCommand c = new AlignHSpacingCommand(currentPage);
-    if (c.align()) {
-      execute(c);
+    if (!(currentPage instanceof PagePane pagePane)) return;
+    AlignHSpacingCommand command = new AlignHSpacingCommand(pagePane);
+    if (command.align()) {
+      execute(command);
     } else {
       selectionWarning();
     }
@@ -1375,6 +1393,12 @@ public class Controller extends JInternalFrame
   public void generateCode() {
     String skeleton=null;
     CodeGenerator cg = CodeGenerator.getInstance();
+    List<PagePane> pages = new ArrayList<PagePane>();
+    for (MainSectionPane pane : Controller.pages) {
+      if (pane instanceof PagePane pagePane) {
+        pages.add(pagePane);
+      }
+    }
     if (projectFile != null) {
       skeleton = cg.generateCode(projectFile, pages, generalEditor.isBackwardCompat());
       if (skeleton != null)
@@ -1426,7 +1450,8 @@ public class Controller extends JInternalFrame
    * cut widgets
    */
   public void cutWidgets() {
-    CutCommand c = new CutCommand(this, currentPage);
+    if (!(currentPage instanceof PagePane pagePane)) return;
+    CutCommand c = new CutCommand(this, pagePane);
     if (c.cut()) {
       execute(c);
     }
@@ -1436,7 +1461,8 @@ public class Controller extends JInternalFrame
    * copy widgets
    */
   public void copyWidgets() {
-    CopyCommand c = new CopyCommand(this, currentPage);
+    if (!(currentPage instanceof PagePane pagePane)) return;
+    CopyCommand c = new CopyCommand(this, pagePane);
     if (c.copy()) {
       execute(c);
     }
@@ -1446,9 +1472,10 @@ public class Controller extends JInternalFrame
    * copy properties
    */
   public void copyProps() {
+    if (!(currentPage instanceof PagePane pagePane)) return;
     CopyPropsCommand c = new CopyPropsCommand(topFrame, this);
-    if (c.copy(currentPage)) {
-      currentPage.rectangularSelection(true);
+    if (c.copy(pagePane)) {
+      pagePane.rectangularSelection(true);
     }
   }
   
@@ -1456,10 +1483,11 @@ public class Controller extends JInternalFrame
    * copy properties part two
    */
   public void copyProps2(CopyPropsCommand c) {
-    if (c.copy2(currentPage)) {
+    if (!(currentPage instanceof PagePane pagePane)) return;
+    if (c.copy2(pagePane)) {
       execute(c);
     } else {
-      currentPage.rectangularSelection(false);
+      pagePane.rectangularSelection(false);
     }
   }
   
@@ -1504,8 +1532,10 @@ public class Controller extends JInternalFrame
       double ratioY = (double)newHeight / (double)oldHeight;
       Builder.logger.debug("Scale ratioX: "+ratioX+" ratioY: "+ratioY);
       // now we can walk the pages and resize each of the elements
-      for (PagePane p : pages) {
-        p.scale(ratioX, ratioY);
+      for (MainSectionPane pane : pages) {
+        if (pane instanceof PagePane pagePane) {
+          pagePane.scale(ratioX, ratioY);
+        }
       } 
       refreshView();
       Builder.logger.debug("Scale command completed");
@@ -1521,9 +1551,10 @@ public class Controller extends JInternalFrame
    * cut widgets
    */
   public void pasteWidgets() {
-    PasteCommand c = new PasteCommand(this, currentPage);
-    if (c.paste()) {
-      execute(c);
+    if (!(currentPage instanceof PagePane pagePane)) return;
+    PasteCommand command = new PasteCommand(this, pagePane);
+    if (command.paste()) {
+      execute(command);
     }
   }
   
@@ -1554,11 +1585,11 @@ public class Controller extends JInternalFrame
    */
   public boolean isValidPageEnum(String pageEnum) {
     litr = pages.listIterator();
-    PagePane p = null;
+    MainSectionPane pane = null;
     String searchKey;
-    while(litr.hasNext()){
-      p = litr.next();
-      searchKey = p.getEnum();
+    while (litr.hasNext()){
+      pane = litr.next();
+      searchKey = pane.getEnum();
       if (searchKey.equals(pageEnum)) {
         return true;
       }
@@ -1567,23 +1598,23 @@ public class Controller extends JInternalFrame
   }
   
   public void zoomIn() {
-    if (currentPage == null) return;
-    currentPage.zoomIn();
+    if (!(currentPage instanceof PagePane pagePane)) return;
+    pagePane.zoomIn();
   }
   
   public void zoomOut() {
-    if (currentPage == null) return;
-    currentPage.zoomOut();
+    if (!(currentPage instanceof PagePane pagePane)) return;
+    pagePane.zoomOut();
   }
 
   public void zoomReset() {
-    if (currentPage == null) return;
-    currentPage.zoomReset();
+    if (!(currentPage instanceof PagePane pagePane)) return;
+    pagePane.zoomReset();
   }
   
   static public void sendRepaint() {
-    if (currentPage == null) return;
-    currentPage.refreshView();
+    if (!(currentPage instanceof PagePane pagePane)) return;
+    pagePane.refreshView();
   }
   
   public static void changeGUIsliceTheme(String newTheme) {
@@ -1591,10 +1622,12 @@ public class Controller extends JInternalFrame
     GUIsliceTheme theme = GUIsliceThemeFactory.getInstance().findThemeByName(newTheme);
     if (theme != null) {
       pm.changeThemeColors(theme);
-      for (PagePane p : pages) {
-        for (Widget w : p.getWidgets()) {
-          m = w.getModel();
-          m.changeThemeColors(theme);
+      for (MainSectionPane pane : pages) {
+        if (pane instanceof PagePane pagePane) {
+          for (Widget w : pagePane.getWidgets()) {
+            m = w.getModel();
+            m.changeThemeColors(theme);
+          }
         }
       }
     }

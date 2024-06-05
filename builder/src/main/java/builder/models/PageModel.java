@@ -57,7 +57,6 @@ public class PageModel extends WidgetModel {
 
     initProp(PROP_KEY, String.class, "COM-001", Boolean.TRUE,"Key",widgetType);
     initProp(PROP_ENUM, String.class, "COM-002", Boolean.FALSE,"ENUM",widgetType);
-
   }
   
   /**

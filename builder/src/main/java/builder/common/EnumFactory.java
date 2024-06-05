@@ -34,6 +34,7 @@ import java.util.Base64;
 import java.util.List;
 
 import builder.codegen.CodeUtils;
+import builder.dictionary.PageTypeDictionary;
 import builder.views.PagePane;
 import builder.widgets.Widget;
 
@@ -337,29 +338,29 @@ public class EnumFactory {
     return countKeys[0];
   }
   
-  public void resetCounts(List<PagePane> pages) {
-    String sType = "";
-    String sCount = "";
-    int c = 0;
-    for (PagePane p : pages) {
-      sType = p.getPageType();
-      sCount = CodeUtils.getKeyCount(p.getKey());
-      c = Integer.valueOf(sCount);
-      resetCount(sType, c);
-      List<Widget> widgets = p.getWidgets();
-      for (Widget w : widgets) {
-        sType = w.getType();
-        sCount = CodeUtils.getKeyCount(w.getKey());
-        c = Integer.valueOf(sCount);  // added for bug 130 Wrong count keys causes dup elements
-        resetCount(sType, c);
-      }
-    }
-  }
+  // public void resetCounts(List<PagePane> pages) {
+  //   PageTypeDictionary pageType = null;
+  //   String sCount = "";
+  //   int c = 0;
+  //   for (PagePane p : pages) {
+  //     pageType = p.getPageType();
+  //     sCount = CodeUtils.getKeyCount(p.getKey());
+  //     c = Integer.valueOf(sCount);
+  //     resetCount(pageType, c);
+  //     List<Widget> widgets = p.getWidgets();
+  //     for (Widget w : widgets) {
+  //       pageType = w.getType();
+  //       sCount = CodeUtils.getKeyCount(w.getKey());
+  //       c = Integer.valueOf(sCount);  // added for bug 130 Wrong count keys causes dup elements
+  //       resetCount(pageType, c);
+  //     }
+  //   }
+  // }
   
-  public void resetCount(String type, int c) {
+  public void resetCount(PageTypeDictionary pageType, int c) {
     int idx = -1;
     for(int i=0; i<EnumFactory.numberOfTypes; i++) {
-      if (type.equals(EnumFactory.typeStrings[i])) {
+      if (pageType.equals(EnumFactory.typeStrings[i])) {
         idx = i;
         break;
       }

@@ -83,6 +83,7 @@ import builder.common.Snapper;
 import builder.common.ScaledGraphics;
 import builder.controller.Controller;
 import builder.controller.PropManager;
+import builder.dictionary.PageTypeDictionary;
 import builder.events.MsgBoard;
 import builder.events.MsgEvent;
 import builder.events.iSubscriber;
@@ -107,7 +108,7 @@ import builder.widgets.Widget.HandleType;
  * @author Paul Conti
  * 
  */
-public class PagePane extends JPanel implements iSubscriber {
+public class PagePane extends MainSectionPane implements iSubscriber {
 
   /** The Constant serialVersionUID. */
   private static final long serialVersionUID = 1L;
@@ -135,7 +136,7 @@ public class PagePane extends JPanel implements iSubscriber {
   private Widget widgetUnderCursor = null;
   
   /** The paint base widgets indicator. */
-  private boolean bPaintBaseWidgets = false;
+  // private boolean bPaintBaseWidgets = false;
 
   /** The project model. */
   private ProjectModel pm = null;
@@ -362,12 +363,12 @@ public class PagePane extends JPanel implements iSubscriber {
     /* output any base page widgets unless this is a project
      * base page or popup page.
      */
-    if (bPaintBaseWidgets && Controller.getBaseWidgets() != null) {
-      for (Widget w : Controller.getBaseWidgets()) {
-        w.unSelect(); // just in case
-        w.draw(g2d);
-      }
-    }
+    // if (bPaintBaseWidgets && Controller.getBaseWidgets() != null) {
+    //   for (Widget w : Controller.getBaseWidgets()) {
+    //     w.unSelect(); // just in case
+    //     w.draw(g2d);
+    //   }
+    // }
 
     // gets rid of the copy
     g2d.dispose();
@@ -617,6 +618,7 @@ public class PagePane extends JPanel implements iSubscriber {
    *
    * @return the key
    */
+  @Override
   public String getKey() {
     return model.getKey();
   }
@@ -626,6 +628,7 @@ public class PagePane extends JPanel implements iSubscriber {
    *
    * @return the enum
    */
+  @Override
   public String getEnum() {
     return model.getEnum();
   }
@@ -964,6 +967,7 @@ public class PagePane extends JPanel implements iSubscriber {
   /**
    * Refresh view.
    */
+  @Override
   public void refreshView() {
     ribbon.setEditButtons(selectedGroupCnt); // needed on page changes
     updateContentSize();
@@ -1513,8 +1517,15 @@ public class PagePane extends JPanel implements iSubscriber {
    *
    * @return the Page Type
    */
-  public String getPageType() {
-    return model.getType();
+  public PageTypeDictionary getPageType() {
+    if (model.getType().equals(EnumFactory.BASEPAGE)) {
+      return PageTypeDictionary.BASEPAGE;
+    } else if (model.getType().equals(EnumFactory.POPUP)) {
+      return PageTypeDictionary.POPUP;
+    } else if (model.getType().equals(EnumFactory.PAGE)) {
+      return PageTypeDictionary.PAGE;
+    }
+    throw new IllegalArgumentException("Invalid Page Type");
   }
 
   /**
@@ -1522,16 +1533,22 @@ public class PagePane extends JPanel implements iSubscriber {
    *
    * @param the pageType
    */
-  public void setPageType(String pageType) {
-    model.setType(pageType);
-    MsgBoard.subscribe(this, model.getKey());
-    if (pageType.equals(EnumFactory.PROJECT)  ||
-        pageType.equals(EnumFactory.BASEPAGE) ||
-        pageType.equals(EnumFactory.POPUP)) {
-      bPaintBaseWidgets=false;
-    } else {
-      bPaintBaseWidgets=true;
+  public void setPageType(PageTypeDictionary pageType) {
+    if (pageType == PageTypeDictionary.BASEPAGE) {
+      model.setType(EnumFactory.BASEPAGE);
+    } else if (pageType == PageTypeDictionary.POPUP) {
+      model.setType(EnumFactory.POPUP);
+    } else if (pageType == PageTypeDictionary.PAGE) {
+      model.setType(EnumFactory.PAGE);
     }
+    MsgBoard.subscribe(this, model.getKey());
+    // if (pageType.equals(EnumFactory.PROJECT)  ||
+    //     pageType.equals(EnumFactory.BASEPAGE) ||
+    //     pageType.equals(EnumFactory.POPUP)) {
+    //   bPaintBaseWidgets=false;
+    // } else {
+    //   bPaintBaseWidgets=true;
+    // }
   }
   
   /**
@@ -1625,6 +1642,7 @@ public class PagePane extends JPanel implements iSubscriber {
     }
   }
 
+  @Override
   public void setActive(boolean state) {
     if (state) {
       refreshView();

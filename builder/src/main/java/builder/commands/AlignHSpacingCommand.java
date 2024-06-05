@@ -116,7 +116,7 @@ public class AlignHSpacingCommand extends Command {
   public void execute() {
     WidgetModel m = null;
     WidgetModel previous = null;
-    int x =0;
+    int x = 0;
     for(int i=0; i<groupList.size(); i++) {
       m = groupList.get(i);
       if (i > 0) {
