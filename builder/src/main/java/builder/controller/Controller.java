@@ -353,7 +353,10 @@ public class Controller extends JInternalFrame
    *          the page key
    * @return the <code>page pane</code> object
    */
-  public PagePane findPage(String pageKey) {
+  public MainSectionPane findPage(String pageKey) {
+    if (projectPage != null && pageKey.equals(projectPage.getKey())) {
+      return projectPage;
+    }
     litr = pages.listIterator();
     PagePane pane = null;
     String searchKey;

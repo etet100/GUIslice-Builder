@@ -32,6 +32,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import javax.swing.AbstractButton;
 import javax.swing.JInternalFrame;
@@ -62,17 +63,21 @@ public class PropManager extends JInternalFrame implements ActionListener, iSubs
   private static final long serialVersionUID = 1L;
   
   /** The editors. */
-  ArrayList<PropEditor> editors;
+  //ArrayList<PropEditor> editors;
   
   /** The cards. */
-  JPanel cards;  // a panel that uses CardLayout
+  //JPanel cards;  // a panel that uses CardLayout
   
   /** The layout. */
-  CardLayout layout;
+  //CardLayout layout;
   
   /** The current widget key. */
   String currentWidgetKey;
-  
+
+  HashMap<String, WidgetModel> models;
+
+  PropEditor propEditor;
+
   /** The instance. */
   private static PropManager instance = null;
   
@@ -93,10 +98,13 @@ public class PropManager extends JInternalFrame implements ActionListener, iSubs
    */
   public PropManager() {
     MsgBoard.subscribe(this, "PropManager");
-    editors = new ArrayList<PropEditor>();
-    layout = new CardLayout();
-    cards = new JPanel(layout);
-    add(cards);
+    //editors = new ArrayList<PropEditor>();
+    propEditor = new PropEditor(null);
+    models = new HashMap<String, WidgetModel>();
+    // layout = new CardLayout();
+    // cards = new JPanel(layout);
+    add(propEditor.getPropPanel());
+    // add(cards);
     this.setTitle("Property View");
     this.setFrameIcon(Utils.getIcon("resources/icons/guislicebuilder.png", 24,24));
     int width = 227;
@@ -126,19 +134,20 @@ public class PropManager extends JInternalFrame implements ActionListener, iSubs
    *
    * @return the parent panel
    */
-  public JPanel getParentPanel() {
-    return cards;
-  }
+  // public JPanel getParentPanel() {
+  //   return cards;
+  // }
   
   /**
    * Close project.
    */
   public void closeProject() {
     setVisible(false);
-    for (PropEditor editor : editors) {
-      layout.removeLayoutComponent(editor.getPropPanel());
-    }
-    editors.clear();
+    // for (PropEditor editor : editors) {
+    //   layout.removeLayoutComponent(editor.getPropPanel());
+    // }
+    // editors.clear();
+    models.clear();
   }
 
   /**
@@ -151,30 +160,32 @@ public class PropManager extends JInternalFrame implements ActionListener, iSubs
   /**
    * Adds the prop editor.
    *
-   * @param m
+   * @param model
    *          the m
    */
-  public void addPropEditor(WidgetModel m)
+  public void addPropEditor(WidgetModel model )
   {
-    PropEditor propEditor = null;
-    String widgetKey = m.getKey();
-    for (PropEditor editor : editors) {
-      if (editor.getKey().equals(widgetKey)) {
-        propEditor = editor;
-        currentWidgetKey = widgetKey;
-        break;
-      }
-    }
-    if (propEditor == null) {
-      propEditor = new PropEditor(m);
-      propEditor.setKey(widgetKey);
-      editors.add(propEditor);
-      currentWidgetKey = widgetKey;
-      cards.add(propEditor.getPropPanel(), currentWidgetKey);
-      layout.last(cards);
-    } else {
-      layout.show(cards, currentWidgetKey);
-    }
+    // PropEditor propEditor = null;
+    // String widgetKey = m.getKey();
+    models.put(model.getKey(), model);
+    //
+    // for (PropEditor editor : editors) {
+    //   if (editor.getKey().equals(widgetKey)) {
+    //     propEditor = editor;
+    //     currentWidgetKey = widgetKey;
+    //     break;
+    //   }
+    // }
+    // if (propEditor == null) {
+    //   propEditor = new PropEditor(m);
+    //   propEditor.setKey(widgetKey);
+    //   editors.add(propEditor);
+    //   currentWidgetKey = widgetKey;
+    //   cards.add(propEditor.getPropPanel(), currentWidgetKey);
+    //   layout.last(cards);
+    // } else {
+    //   layout.show(cards, currentWidgetKey);
+    // }
   }
   
   /**
@@ -184,8 +195,20 @@ public class PropManager extends JInternalFrame implements ActionListener, iSubs
    *          the widget key
    */
   public void showPropEditor(String widgetKey) {
-    layout.show(cards, widgetKey);
-    currentWidgetKey = widgetKey;
+    WidgetModel model = models.get(widgetKey);
+    if (model == null) {
+      return;
+    }
+    // for (WidgetModel m : models) {
+    //   if (m.getKey().equals(widgetKey)) {
+    //     //layout.show(cards, widgetKey);
+    //     currentWidgetKey = widgetKey;
+    //     return;
+    //   }
+    // }
+    //layout.show(cards, widgetKey);
+      currentWidgetKey = widgetKey;
+    propEditor.setModel(model);
   }
 
   /**
@@ -233,7 +256,8 @@ public class PropManager extends JInternalFrame implements ActionListener, iSubs
   * @return the <code>card layout</code> object
   */
  public CardLayout backup() {
-   return layout;
+   //return layout;
+   return null;
  }
  
  /**
@@ -243,7 +267,7 @@ public class PropManager extends JInternalFrame implements ActionListener, iSubs
   *          the layout
   */
  public void restore(CardLayout layout) {
-   this.layout = layout;
+   //this.layout = layout;
  }
  
 }

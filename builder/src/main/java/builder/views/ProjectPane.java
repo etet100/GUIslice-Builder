@@ -47,7 +47,7 @@ public class ProjectPane extends MainSectionPane {
 
   @Override
   public String getKey() {
-    return "project";
+    return model.getKey();
   }
 
   @Override

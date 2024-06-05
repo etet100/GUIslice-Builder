@@ -33,6 +33,7 @@ import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableModel;
 
 import builder.clipboard.ClipboardKeyAdapter;
 import builder.models.WidgetModel;
@@ -51,28 +52,93 @@ import builder.tables.SelectAllCellEditor;
  */
 public class PropEditor {
   
-  /** The scroll pane. */
-  private  JScrollPane scrollPane;
-  
-  /** The table. */
-  private  MultiClassTable table;
-  
-  /** The key. */
-  private  String key;
-  
-  /** The model. */
-  private  WidgetModel model;
+  private JScrollPane scrollPane;
+  private MultiClassTable table;
+  private String key;
+  //private WidgetModel model;
+  private boolean initialized = false;
 
   /**
    * Instantiates a new prop editor.
    *
-   * @param m
+   * @param model
    *          the model
    */
-  public PropEditor(WidgetModel m) {
-    model = m;
-    table = new MultiClassTable(model);
+  public PropEditor(WidgetModel model) {
+    table = new MultiClassTable(new WidgetModel() {
+      @Override
+      public int getRowCount() {
+        return 1;
+      }
 
+      @Override
+      public int getColumnCount() {
+        return 1;
+      }
+
+      @Override
+      public String getColumnName(int columnIndex) {
+        return "Info";
+      }
+
+      @Override
+      public Class<?> getColumnClass(int columnIndex) {
+        return String.class;
+      }
+
+      @Override
+      public Class<?> getClassAt(int rowIndex) {
+        return String.class;
+      }
+
+      @Override
+      public boolean isCellEditable(int rowIndex, int columnIndex) {
+        return false;
+      }
+
+      @Override
+      public Object getValueAt(int rowIndex, int columnIndex) {
+        return "Select something...";
+      }
+
+      @Override
+      public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
+      }
+
+      @Override
+      public void addTableModelListener(javax.swing.event.TableModelListener l) {
+      }
+
+      @Override
+      public void removeTableModelListener(javax.swing.event.TableModelListener l) {
+      }
+    });
+
+    if (model != null) {
+      setModel(model);
+    }
+
+    // set keyboard listener for copy and paste
+    table.addKeyListener(new ClipboardKeyAdapter(table));
+
+    scrollPane = new JScrollPane(
+      table,
+      JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
+      JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED
+    );
+    scrollPane.setPreferredSize(new Dimension(1200, 650));
+  }
+
+  public void setModel(WidgetModel model) {
+    //this.model = model;
+    table.setModel(model);
+    if (!initialized) {
+      init(model);
+      initialized = true;
+    }
+  }
+
+  private void init(WidgetModel model) {
     table.setPreferredScrollableViewportSize(table.getPreferredSize());
 
     // Set up renderer and editor for our Color cells.
@@ -82,7 +148,6 @@ public class PropEditor {
     // Set up our gray out non editable cells renderer.
     table.setDefaultRenderer(String.class, new NonEditableCellRenderer());
     DefaultTableCellRenderer integerNonEditableCellRenderer = new NonEditableCellRenderer();
-    integerNonEditableCellRenderer.setHorizontalAlignment( SwingConstants.LEFT );
     table.setDefaultRenderer(Integer.class, integerNonEditableCellRenderer);
     DefaultTableCellRenderer checkBoxNonEditableCellRenderer = new NonEditableCellRenderer();
     checkBoxNonEditableCellRenderer.setHorizontalAlignment( SwingConstants.LEFT );
@@ -113,18 +178,9 @@ public class PropEditor {
     
     // disable user column dragging
     table.getTableHeader().setReorderingAllowed(false);
-    
-    // set keyboard listener for copy and paste
-    table.addKeyListener(new ClipboardKeyAdapter(table));
-/*
-    scrollPane = new JScrollPane(table,
-        JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, 
-        JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-*/
-    scrollPane = new JScrollPane(table,
-        JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, 
-        JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-    scrollPane.setPreferredSize(new Dimension(1200, 650));
+
+    scrollPane.updateUI();
+    table.updateUI();
   }
   
   /**
