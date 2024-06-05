@@ -85,9 +85,9 @@ public class LineCodeBlock implements CodeBlock {
     int nX1, nY1;
     if (m.isVertical()) {
       nX1 = m.getX();
-      nY1 = m.getY()+m.getWidth();
+      nY1 = m.getY()+m.getLength();
     } else {
-      nX1 = m.getX()+m.getWidth();
+      nX1 = m.getX()+m.getLength();
       nY1 = m.getY();
     }
     map.put(X1_MACRO, String.valueOf(nX1));
